@@ -82,6 +82,14 @@ Na primeira vez, o app grava no banco o SWOT e o PESTEL do UFC; depois disso ele
 - **Conflitos:** cada ideia, público e grupo do SWOT/PESTEL é gravado separadamente. Se duas pessoas editarem itens diferentes ao mesmo tempo, nada se perde. Se editarem exatamente o mesmo item, vale a última gravação.
 - **Quem está digitando não é interrompido:** atualizações de outras pessoas esperam o campo perder o foco.
 
+### Atalhos e navegação
+
+- **Celular:** o menu fica atrás do botão com três linhas (hambúrguer), no canto superior esquerdo. Ele fecha ao escolher uma tela, ao tocar fora dele ou ao apertar Esc.
+- **Enter** envia os formulários de ideia, de público e de itens do SWOT/PESTEL. **Esc** fecha formulários que ainda não têm nada digitado.
+- **Excluir** é imediato, mas aparece um aviso com **Desfazer** por 9 segundos.
+- O custo aceita `12000`, `12.000` ou `12.000,50`.
+- A análise de usabilidade (heurísticas de Nielsen e navegação) está em `ANALISE_UX.md`.
+
 ## 4. Importar públicos-alvo de um arquivo
 
 Na tela **Públicos-alvo** há uma área de upload no topo. Arraste um arquivo para ela ou clique em **escolha no computador**.

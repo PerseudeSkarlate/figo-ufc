@@ -18,7 +18,7 @@
   :root {
     --ink: #221B33;
     --quiet: #6E6580;
-    --faint: #9C93AD;
+    --faint: #736A88;
     --line: #E4DEEF;
     --line-strong: #D3C9E6;
     --bg: #F6F4FA;
@@ -34,7 +34,7 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --ink: #ECE9F5; --quiet: #A79EBC; --faint: #7A7296;
+      --ink: #ECE9F5; --quiet: #A79EBC; --faint: #9A92B4;
       --line: #332B47; --line-strong: #443A5C;
       --bg: #120F1A; --panel: #1E1930;
       --accent: #A78BFA; --accent-tint: #2C2340; --accent-ink: #D9CCFB;
@@ -42,7 +42,7 @@
     }
   }
   :root[data-theme="dark"] {
-    --ink: #ECE9F5; --quiet: #A79EBC; --faint: #7A7296;
+    --ink: #ECE9F5; --quiet: #A79EBC; --faint: #9A92B4;
     --line: #332B47; --line-strong: #443A5C;
     --bg: #120F1A; --panel: #1E1930;
     --accent: #A78BFA; --accent-tint: #2C2340; --accent-ink: #D9CCFB;
@@ -266,6 +266,29 @@
   button[disabled] { opacity: .5; cursor: not-allowed; }
   .footnote { margin-top: 28px; font-size: 12px; color: var(--faint); line-height: 1.6; }
 
+  /* ================= acessibilidade e feedback ================= */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input.f:focus-visible, select.f:focus-visible, textarea.f:focus-visible { outline-offset: 0; }
+  h1:focus { outline: none; }
+  .skip { position: absolute; left: 12px; top: -56px; z-index: 100; background: var(--accent); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; }
+  .skip:focus { top: 12px; }
+  .field-err { display: block; margin-top: 5px; font-size: 12px; font-weight: 600; color: var(--accent); }
+  input.f[aria-invalid="true"], select.f[aria-invalid="true"], textarea.f[aria-invalid="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .hint-sm { display: block; margin-top: 5px; font-size: 11.5px; color: var(--faint); }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 60;
+    display: none; align-items: center; gap: 14px; max-width: min(560px, calc(100vw - 32px)); padding: 10px 12px 10px 18px;
+    background: var(--ink); color: var(--bg); border-radius: 12px; font-size: 13.5px; line-height: 1.4;
+    box-shadow: 0 8px 28px rgba(20, 10, 40, .28);
+  }
+  .toast.show { display: flex; }
+  .toast.warn { border-left: 4px solid #F5B942; }
+  .toast button { background: none; border: none; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 10px 6px; white-space: nowrap; }
+  .dropzone.compact { padding: 12px 18px; text-align: left; }
+  .dropzone.compact .dz-title, .dropzone.compact .dz-sub { display: inline; margin: 0; }
+  .dropzone.compact .dz-title { font-size: 13.5px; margin-right: 8px; }
+  .mbar, .scrim, .drawer-close { display: none; }
+
   /* ================= responsive ================= */
   @media (max-width: 1200px) {
     .s4w { grid-column: span 6; }
@@ -276,27 +299,52 @@
   }
   @media (max-width: 980px) {
     .shell { grid-template-columns: minmax(0, 1fr); }
-    .side {
-      position: sticky; top: 0; z-index: 20; height: auto; flex-direction: row; align-items: center; gap: 10px;
-      padding: 10px 14px; border-right: none; border-bottom: 1px solid var(--line); overflow-x: auto;
+    .mbar {
+      display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 30;
+      padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
     }
-    .brand { padding: 0 8px 0 0; flex: none; }
-    .brand-sub, .side-foot { display: none; }
-    .nav { flex-direction: row; gap: 4px; }
-    .nav button { width: auto; white-space: nowrap; padding: 8px 12px; }
-    .main { padding: 24px 18px 80px; }
+    .mbar .brand-mark { width: 30px; height: 30px; font-size: 13px; }
+    .mbar-title { font-weight: 800; font-size: 14.5px; letter-spacing: -0.01em; }
+    .mbar-sync { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--quiet); padding-right: 4px; }
+    .hamburger {
+      width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; flex: none;
+      background: none; border: 1px solid var(--line-strong); border-radius: 12px; color: var(--ink); cursor: pointer;
+    }
+    .hamburger:hover { background: var(--accent-tint); }
+    .hamburger svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; }
+    .side {
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; width: min(300px, 86vw); height: 100vh; height: 100dvh;
+      overflow-y: auto; transform: translateX(-102%); visibility: hidden;
+      transition: transform .22s ease, visibility 0s linear .22s;
+      padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    }
+    .side.open { transform: translateX(0); visibility: visible; transition: transform .22s ease; box-shadow: 8px 0 32px rgba(20, 10, 40, .25); }
+    .scrim { position: fixed; inset: 0; z-index: 45; background: rgba(20, 10, 40, .45); display: block; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+    .scrim.open { opacity: 1; pointer-events: auto; }
+    .drawer-close { display: inline-flex; align-items: center; justify-content: center; margin-left: auto; width: 44px; height: 44px; background: none; border: none; color: var(--quiet); font-size: 26px; line-height: 1; cursor: pointer; border-radius: 10px; }
+    .drawer-close:hover { background: var(--accent-tint); color: var(--ink); }
+    .nav button { padding: 13px 12px; font-size: 14.5px; }
+    .main { padding: 22px 18px 96px; }
     .topbar h1 { font-size: 24px; }
+    body.menu-open { overflow: hidden; }
   }
   @media (max-width: 720px) {
     .s4, .s6, .s4w { grid-column: span 12; }
     .field-grid, .field-grid.cols3 { grid-template-columns: 1fr; }
     .cards-grid, .form-groups, .group-blocks { grid-template-columns: 1fr; }
-    .nav .badge { display: none; }
+    .top-actions { width: 100%; }
+    .top-actions .new-idea-toggle { flex: 1; justify-content: center; padding: 13px 18px; }
+    input.f, select.f, textarea.f { font-size: 16px; }
+    .icon-btn { padding: 11px 13px; font-size: 13px; }
+    .an-x { padding: 8px 14px; font-size: 22px; }
+    select.filter { padding: 10px 14px; font-size: 14px; }
+    .toast { left: 16px; right: 16px; transform: none; max-width: none; }
   }
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <noscript>Este app precisa de JavaScript para funcionar.</noscript>
 
 <script>
@@ -833,7 +881,8 @@
     filterPhase: "all", filterCategory: "all", draft: null,
     publicFormOpen: false, editingPublicId: null, confirmDeletePublicId: null, publicDraft: null,
     analiseTab: "swot", analiseEdit: false,
-    importState: null, importPreview: null, importMsg: ""
+    importState: null, importPreview: null, importMsg: "",
+    menuOpen: false, focusAfter: null, formErrors: {}, publicErrors: {}
   };
   var net = { status: REMOTE ? "loading" : "local" };   // local | loading | online | saving | offline
   var remoteSnap = { ideas: {}, publics: {}, swot: {}, pestel: {} };
@@ -860,11 +909,43 @@
     }
     return '<span class="sync-dot ' + cls + '"></span>' + txt;
   }
+  function syncShortHtml() {
+    var map = { local: ["off", "Local"], loading: ["busy", "Conectando…"], saving: ["busy", "Salvando…"], offline: ["off", "Offline"], online: ["", "Ao vivo"] };
+    var m = map[net.status] || map.online;
+    return '<span class="sync-dot ' + m[0] + '"></span>' + m[1];
+  }
   function setNet(status) {
     net.status = status;
     var el = document.querySelector(".sync-note");
     if (el) el.innerHTML = syncNoteHtml();
+    var mb = document.querySelector(".mbar-sync");
+    if (mb) mb.innerHTML = syncShortHtml();
   }
+
+  // avisos (fora do #app, para não sumirem quando a tela é redesenhada)
+  var toastTimer = null, toastUndo = null;
+  function hideToast() {
+    var el = document.getElementById("toast");
+    if (el) { el.className = "toast"; el.innerHTML = ""; }
+    toastUndo = null; clearTimeout(toastTimer);
+  }
+  function showToast(msg, opts) {
+    opts = opts || {};
+    var el = document.getElementById("toast");
+    if (!el) return;
+    toastUndo = opts.undo || null;
+    el.className = "toast show" + (opts.warn ? " warn" : "");
+    el.innerHTML = "<span>" + esc(msg) + "</span>"
+      + (opts.undo ? '<button type="button" data-toast-undo>Desfazer</button>' : '<button type="button" data-toast-close aria-label="Fechar aviso">×</button>');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, opts.undo ? 9000 : (opts.warn ? 7000 : 4000));
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    if (t.closest("[data-toast-undo]")) { var fn = toastUndo; hideToast(); if (fn) fn(); }
+    else if (t.closest("[data-toast-close]")) hideToast();
+  });
   function isTyping() {
     var a = document.activeElement;
     return !!(a && a.closest && a.closest("#app") && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
@@ -938,7 +1019,10 @@
       .then(function () {
         pendingWrites--;
         if (pendingWrites > 0) return;
-        if (writeFailed) { writeFailed = false; setNet("offline"); needsRefetch = true; refetch(); }
+        if (writeFailed) {
+          writeFailed = false; setNet("offline"); needsRefetch = true; refetch();
+          showToast("Não foi possível salvar agora. Vou tentar reconectar; confira depois se a sua alteração continua na tela.", { warn: true });
+        }
         else { setNet("online"); if (needsRefetch) refetch(); }
       });
   }
@@ -986,7 +1070,24 @@
   }
 
   // ---------------- mutations ----------------
-  function parseCost(v) { return parseFloat(String(v).replace(",", ".")) || 0; }
+  // aceita 12000, 12.000, 12.000,50, 12,5 e US$ 12.000
+  function parseMoney(v) {
+    var t = String(v == null ? "" : v).replace(/US\$|\$|\s/gi, "");
+    if (!t) return 0;
+    if (!/^[\d.,]+$/.test(t)) return NaN;
+    var lastDot = t.lastIndexOf("."), lastComma = t.lastIndexOf(",");
+    if (lastDot >= 0 && lastComma >= 0) {
+      t = lastComma > lastDot ? t.replace(/\./g, "").replace(",", ".") : t.replace(/,/g, "");
+    } else if (lastComma >= 0) {
+      if (t.split(",").length > 2) { if (!/^\d{1,3}(,\d{3})+$/.test(t)) return NaN; t = t.replace(/,/g, ""); }
+      else t = t.replace(",", ".");
+    } else if (lastDot >= 0 && /^\d{1,3}(\.\d{3})+$/.test(t)) {
+      t = t.replace(/\./g, "");
+    }
+    if (!/^\d+(\.\d+)?$/.test(t)) return NaN;
+    return parseFloat(t);
+  }
+  function parseCost(v) { var n = parseMoney(v); return isNaN(n) ? 0 : n; }
   function addIdea(d) {
     state.ideas.push({
       id: uid(), ord: Date.now(), name: d.name.trim(), category: d.category, publico: (d.publico || "").trim(),
@@ -999,7 +1100,7 @@
     it.name = d.name.trim(); it.category = d.category; it.publico = (d.publico || "").trim();
     it.phase = d.phase; it.cost = parseCost(d.cost); it.status = d.status; it.notes = d.notes.trim();
   }
-  function removeIdea(id) { state.ideas = state.ideas.filter(function (i) { return i.id !== id; }); }
+  function removeIdea(id) { var it = byId(state.ideas, id); state.ideas = state.ideas.filter(function (i) { return i.id !== id; }); return it; }
 
   function addPublic(d) {
     var rec = { id: uid(), ord: Date.now(), nome: d.nome.trim() };
@@ -1012,7 +1113,13 @@
     it.nome = d.nome.trim();
     PUBLIC_FIELD_KEYS.forEach(function (k) { it[k] = (d[k] || "").trim(); });
   }
-  function removePublic(id) { state.publics = state.publics.filter(function (p) { return p.id !== id; }); }
+  function removePublic(id) { var it = byId(state.publics, id); state.publics = state.publics.filter(function (p) { return p.id !== id; }); return it; }
+  function restoreItem(listName, item) {
+    if (!item || byId(state[listName], item.id)) return;
+    state[listName].push(item);
+    state[listName].sort(function (a, b) { return (a.ord || 0) - (b.ord || 0); });
+    persist();
+  }
 
   function addAnalysisItem(kind, gid, text) {
     text = (text || "").trim();
@@ -1022,7 +1129,17 @@
     return true;
   }
   function removeAnalysisItem(kind, gid, idx) {
-    if (Array.isArray(state[kind][gid])) state[kind][gid].splice(idx, 1);
+    var arr = state[kind][gid];
+    if (!Array.isArray(arr) || idx < 0 || idx >= arr.length) return null;
+    var text = arr[idx];
+    arr.splice(idx, 1);
+    return { kind: kind, gid: gid, idx: idx, text: text };
+  }
+  function restoreAnalysisItem(r) {
+    if (!r || !Array.isArray(state[r.kind][r.gid])) return;
+    var arr = state[r.kind][r.gid];
+    arr.splice(Math.min(r.idx, arr.length), 0, r.text);
+    persist();
   }
 
   // ---------------- computed ----------------
@@ -1065,21 +1182,42 @@
     else if (view === "analise") body = viewAnalise();
     else body = viewGeral(allocTotal);
 
-    app.innerHTML = '<div class="shell">' + renderSide(allocTotal) + '<main class="main">' + renderTopbar(meta, view) + body + '</main></div>';
+    document.title = meta.title + " · Figo × UFC";
+    document.body.classList.toggle("menu-open", !!ui.menuOpen);
+    app.innerHTML = '<a class="skip" href="#conteudo">Pular para o conteúdo</a>'
+      + '<div class="shell">' + renderMobileBar()
+      + '<div class="scrim' + (ui.menuOpen ? " open" : "") + '" data-action="menu-close"></div>'
+      + renderSide(allocTotal)
+      + '<main class="main" id="conteudo" tabindex="-1"' + (ui.menuOpen ? " inert" : "") + '>' + renderTopbar(meta, view) + body + '</main></div>';
     bindEvents();
+    if (ui.focusAfter) {
+      var fel = app.querySelector(ui.focusAfter);
+      ui.focusAfter = null;
+      if (fel) fel.focus();
+    }
+  }
+
+  function renderMobileBar() {
+    return '<header class="mbar"' + (ui.menuOpen ? " inert" : "") + '>'
+      + '<button class="hamburger" data-action="menu-toggle" aria-label="Abrir menu de navegação" aria-expanded="' + (ui.menuOpen ? "true" : "false") + '" aria-controls="app-menu">'
+      + '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></svg></button>'
+      + '<div class="brand-mark" aria-hidden="true">F</div><span class="mbar-title">Figo × UFC</span>'
+      + '<span class="mbar-sync">' + syncShortHtml() + '</span></header>';
   }
 
   function renderSide(allocTotal) {
     var pct = Math.min(allocTotal / TOTAL_BUDGET * 100, 100);
     var nav = VIEWS.map(function (v) {
       var badge = v.id === "ideias" ? state.ideas.length : (v.id === "publicos" ? state.publics.length : null);
-      return '<button class="' + (ui.view === v.id ? "on" : "") + '" data-action="nav" data-view="' + v.id + '">'
+      var active = ui.view === v.id;
+      return '<button class="' + (active ? "on" : "") + '" data-action="nav" data-view="' + v.id + '"' + (active ? ' aria-current="page"' : '') + '>'
         + '<svg viewBox="0 0 16 16" aria-hidden="true">' + v.icon + '</svg><span>' + esc(v.label) + '</span>'
         + (badge !== null ? '<span class="badge">' + badge + '</span>' : '') + '</button>';
     }).join("");
-    return '<aside class="side">'
-      + '<div class="brand"><div class="brand-mark">F</div><div><div class="brand-name">Figo × UFC</div><div class="brand-sub">A3 Branding</div></div></div>'
-      + '<nav class="nav">' + nav + '</nav>'
+    return '<aside class="side' + (ui.menuOpen ? " open" : "") + '" id="app-menu" aria-label="Menu">'
+      + '<div class="brand"><div class="brand-mark">F</div><div><div class="brand-name">Figo × UFC</div><div class="brand-sub">A3 Branding</div></div>'
+      + '<button class="drawer-close" data-action="menu-close" aria-label="Fechar menu">×</button></div>'
+      + '<nav class="nav" aria-label="Navegação principal">' + nav + '</nav>'
       + '<div class="side-foot">'
       + '<div class="mini-label"><span>Orçamento alocado</span><b>' + Math.round(pct) + '%</b></div>'
       + '<div class="mini-track"><div class="mini-fill" style="width:' + pct.toFixed(1) + '%"></div></div>'
@@ -1095,12 +1233,12 @@
     if (view === "publicos" && !ui.publicFormOpen) actions = '<button class="new-idea-toggle" data-action="open-public-form"><span class="plus">+</span> Novo público-alvo</button>';
     if (view === "analise") {
       var kind = ui.analiseTab === "pestel" ? "pestel" : "swot";
-      actions = '<div class="seg" role="tablist">'
-        + '<button class="' + (kind === "swot" ? "on" : "") + '" data-action="an-tab" data-tab="swot">SWOT</button>'
-        + '<button class="' + (kind === "pestel" ? "on" : "") + '" data-action="an-tab" data-tab="pestel">PESTEL</button></div>'
+      actions = '<div class="seg" role="tablist" aria-label="Tipo de análise">'
+        + '<button role="tab" aria-selected="' + (kind === "swot") + '" class="' + (kind === "swot" ? "on" : "") + '" data-action="an-tab" data-tab="swot">SWOT</button>'
+        + '<button role="tab" aria-selected="' + (kind === "pestel") + '" class="' + (kind === "pestel" ? "on" : "") + '" data-action="an-tab" data-tab="pestel">PESTEL</button></div>'
         + '<button class="btn-ghost" data-action="an-edit-toggle">' + (ui.analiseEdit ? "Concluir edição" : "Editar itens") + '</button>';
     }
-    return '<header class="topbar"><div><p class="kicker">Figo × UFC · A3 Branding</p><h1>' + esc(meta.title) + '</h1><p class="sub">' + esc(meta.sub) + '</p></div>'
+    return '<header class="topbar"><div><p class="kicker">Figo × UFC · A3 Branding</p><h1 tabindex="-1">' + esc(meta.title) + '</h1><p class="sub">' + esc(meta.sub) + '</p></div>'
       + '<div class="top-actions">' + actions + '</div></header>';
   }
 
@@ -1210,19 +1348,22 @@
   function renderIdeaCard(it) {
     var cat = byId(CATEGORIES, it.category), ph = byId(PHASES, it.phase);
     var st = byId(STATUSES, it.status) || STATUSES[0];
-    var confirming = ui.confirmDeleteId === it.id;
+    var nm = esc(it.name || "sem nome");
     return '<article class="idea-card">'
       + '<div class="ic-top"><span class="tag ' + st.cls + '">' + esc(st.label) + '</span><span class="ic-cost">' + fmtMoney(it.cost) + '</span></div>'
       + '<div class="ic-name">' + esc(it.name || "Sem nome") + '</div>'
       + '<div class="ic-meta">' + esc(cat ? cat.label : "—") + '<span class="dot">·</span>' + esc(ph ? ph.label : "—")
       + (it.publico ? '<span class="dot">·</span>' + esc(it.publico) : '') + '</div>'
       + (it.notes ? '<div class="ic-notes">' + esc(it.notes) + '</div>' : '')
-      + '<div class="ic-actions"><button class="icon-btn" data-action="edit" data-id="' + it.id + '">Editar</button>'
-      + (confirming
-          ? '<button class="icon-btn confirm" data-action="confirm-delete" data-id="' + it.id + '">Confirmar exclusão</button><button class="icon-btn" data-action="cancel-delete">Cancelar</button>'
-          : '<button class="icon-btn danger" data-action="delete" data-id="' + it.id + '">Excluir</button>')
+      + '<div class="ic-actions"><button class="icon-btn" data-action="edit" data-id="' + it.id + '" aria-label="Editar ideia ' + nm + '">Editar</button>'
+      + '<button class="icon-btn danger" data-action="delete" data-id="' + it.id + '" aria-label="Excluir ideia ' + nm + '">Excluir</button>'
       + '</div></article>';
   }
+
+  function errHtml(errs, key) {
+    return errs && errs[key] ? '<span class="field-err" role="alert">' + esc(errs[key]) + '</span>' : "";
+  }
+  function invalidAttr(errs, key) { return errs && errs[key] ? ' aria-invalid="true"' : ""; }
 
   function renderIdeaForm() {
     var d = ui.draft || emptyDraft();
@@ -1238,12 +1379,12 @@
 
     return '<div class="card idea-form"><h3>' + (isEdit ? "Editar ideia" : "Nova ideia") + '</h3>'
       + '<div class="field-grid cols3">'
-      + '<label class="field full"><span class="lbl">Nome da ideia</span><input class="f" data-field="name" value="' + esc(d.name) + '" placeholder="Ex.: série de conteúdo com atletas de base"></label>'
+      + '<label class="field full"><span class="lbl">Nome da ideia (obrigatório)</span><input class="f" data-field="name" aria-required="true"' + invalidAttr(ui.formErrors, "name") + ' value="' + esc(d.name) + '" placeholder="Ex.: série de conteúdo com atletas de base">' + errHtml(ui.formErrors, "name") + '</label>'
       + '<label class="field"><span class="lbl">Categoria de orçamento</span><select class="f" data-field="category">' + catOpts + '</select></label>'
       + '<label class="field"><span class="lbl">Fase de implementação</span><select class="f" data-field="phase">' + phOpts + '</select></label>'
       + '<label class="field"><span class="lbl">Status</span><select class="f" data-field="status">' + stOpts + '</select></label>'
       + '<label class="field"><span class="lbl">Público</span>' + publicField + '</label>'
-      + '<label class="field"><span class="lbl">Custo estimado (US$)</span><input class="f" data-field="cost" inputmode="decimal" value="' + esc(d.cost) + '" placeholder="0"></label>'
+      + '<label class="field"><span class="lbl">Custo estimado (US$)</span><input class="f" data-field="cost" inputmode="decimal"' + invalidAttr(ui.formErrors, "cost") + ' value="' + esc(d.cost) + '" placeholder="Ex.: 12000">' + errHtml(ui.formErrors, "cost") + '<span class="hint-sm">Aceita 12000, 12.000 ou 12.000,50</span></label>'
       + '<label class="field full"><span class="lbl">Notas</span><textarea class="f" data-field="notes" placeholder="Contexto, dependências, referência...">' + esc(d.notes) + '</textarea></label>'
       + '</div><div class="form-actions"><button class="btn-primary" data-action="save-form">' + (isEdit ? "Salvar alterações" : "Adicionar ideia") + '</button>'
       + '<button class="btn-ghost" data-action="close-form">Cancelar</button></div></div>';
@@ -1275,15 +1416,15 @@
       return '<div class="gblock"><div class="gtitle">' + esc(g.label) + '</div><div class="gfields">' + fields + '</div></div>';
     }).join("");
     return '<div class="card idea-form"><h3>' + (isEdit ? "Editar público-alvo" : "Novo público-alvo") + '</h3>'
-      + '<div class="field-grid"><label class="field full"><span class="lbl">Nome do público</span><input class="f" data-pfield="nome" value="' + esc(d.nome) + '" placeholder="Ex.: fãs recentes do UFC no Brasil"></label></div>'
+      + '<div class="field-grid"><label class="field full"><span class="lbl">Nome do público (obrigatório)</span><input class="f" data-pfield="nome" aria-required="true"' + invalidAttr(ui.publicErrors, "nome") + ' value="' + esc(d.nome) + '" placeholder="Ex.: fãs recentes do UFC no Brasil">' + errHtml(ui.publicErrors, "nome") + '</label></div>'
       + '<div class="form-groups">' + groups + '</div>'
       + '<div class="form-actions"><button class="btn-primary" data-action="save-public-form">' + (isEdit ? "Salvar alterações" : "Adicionar público") + '</button>'
       + '<button class="btn-ghost" data-action="close-public-form">Cancelar</button></div></div>';
   }
 
   function renderPublicCard(p) {
-    var confirming = ui.confirmDeletePublicId === p.id;
     var anyFilled = PUBLIC_FIELD_KEYS.some(function (k) { return p[k]; });
+    var nm = esc(p.nome || "sem nome");
     var blocks = PUBLIC_FIELD_GROUPS.map(function (g) {
       var rows = g.fields.filter(function (f) { return p[f[0]]; });
       if (!rows.length) return "";
@@ -1291,10 +1432,8 @@
         + rows.map(function (f) { return '<div><b>' + esc(f[1]) + ':</b> ' + esc(p[f[0]]) + '</div>'; }).join("") + '</div></div>';
     }).join("");
     return '<div class="public-head"><span class="public-name">' + esc(p.nome || "Sem nome") + '</span><div class="head-actions">'
-      + '<button class="icon-btn" data-action="edit-public" data-id="' + p.id + '">Editar</button>'
-      + (confirming
-          ? '<button class="icon-btn confirm" data-action="confirm-delete-public" data-id="' + p.id + '">Confirmar exclusão</button><button class="icon-btn" data-action="cancel-delete-public">Cancelar</button>'
-          : '<button class="icon-btn danger" data-action="delete-public" data-id="' + p.id + '">Excluir</button>')
+      + '<button class="icon-btn" data-action="edit-public" data-id="' + p.id + '" aria-label="Editar público ' + nm + '">Editar</button>'
+      + '<button class="icon-btn danger" data-action="delete-public" data-id="' + p.id + '" aria-label="Excluir público ' + nm + '">Excluir</button>'
       + '</div></div>'
       + (anyFilled ? '<div class="group-blocks">' + blocks + '</div>' : '<p class="public-notes">Nenhum critério preenchido ainda — clique em editar para completar.</p>');
   }
@@ -1323,7 +1462,7 @@
     if (st && st.status === "reading") msg = '<p class="dz-status">Lendo “' + esc(st.fileName) + '”…</p>';
     else if (st && st.status === "error") msg = '<p class="dz-status err">' + esc(st.message) + '</p>';
     else if (ui.importMsg) msg = '<p class="dz-status ok">' + esc(ui.importMsg) + '</p>';
-    return '<section class="card s12 dropzone" data-role="dropzone"><div class="dz-title">Importar públicos-alvo de um arquivo</div>'
+    return '<section class="card s12 dropzone' + (state.publics.length ? " compact" : "") + '" data-role="dropzone"><div class="dz-title">Importar públicos-alvo de um arquivo</div>'
       + '<p class="dz-sub">Arraste um arquivo para cá ou <button class="link-btn" data-action="pick-file">escolha no computador</button>. Aceita PDF, Word (.docx), TXT, Markdown, JSON e CSV.</p>'
       + '<input type="file" id="file-input" accept=".pdf,.docx,.txt,.md,.json,.csv" hidden>' + msg + '</section>';
   }
@@ -1361,6 +1500,45 @@
     return html + '</div>';
   }
 
+  function clearFieldError(errs, key, el) {
+    if (!errs || !errs[key]) return;
+    delete errs[key];
+    el.removeAttribute("aria-invalid");
+    var er = el.parentNode && el.parentNode.querySelector(".field-err");
+    if (er) er.remove();
+  }
+  function submitIdeaForm() {
+    var d = ui.draft || emptyDraft(), errs = {};
+    if (!d.name || !d.name.trim()) errs.name = "Dê um nome para a ideia.";
+    if (String(d.cost || "").trim() && isNaN(parseMoney(d.cost))) errs.cost = "Use só números, por exemplo 12000 ou 12.000,50.";
+    if (Object.keys(errs).length) {
+      ui.formErrors = errs;
+      ui.focusAfter = errs.name ? "[data-field='name']" : "[data-field='cost']";
+      render();
+      return;
+    }
+    var wasEdit = !!ui.editingId;
+    if (wasEdit) updateIdea(ui.editingId, d); else addIdea(d);
+    ui.formOpen = false; ui.editingId = null; ui.draft = null; ui.formErrors = {};
+    var over = state.ideas.reduce(function (sum, i) { return sum + (i.cost || 0); }, 0) - ALLOCABLE;
+    persist();
+    showToast((wasEdit ? "Ideia atualizada." : "Ideia adicionada.") + (over > 0 ? " Atenção: o total alocado passou do orçamento em " + fmtMoney(over) + "." : ""), { warn: over > 0 });
+  }
+  function submitPublicForm() {
+    var d = ui.publicDraft || emptyPublicDraft();
+    var nome = (d.nome || "").trim();
+    if (!nome) { ui.publicErrors = { nome: "Dê um nome para o público." }; }
+    else if (state.publics.some(function (p) { return p.id !== ui.editingPublicId && norm(p.nome) === norm(nome); })) {
+      ui.publicErrors = { nome: "Já existe um público com esse nome. Use outro nome ou edite o existente." };
+    }
+    if (ui.publicErrors.nome) { ui.focusAfter = "[data-pfield='nome']"; render(); return; }
+    var wasEdit = !!ui.editingPublicId;
+    if (wasEdit) updatePublic(ui.editingPublicId, d); else addPublic(d);
+    ui.publicFormOpen = false; ui.editingPublicId = null; ui.publicDraft = null; ui.publicErrors = {};
+    persist();
+    showToast(wasEdit ? "Público atualizado." : "Público adicionado.");
+  }
+
   // ================= events =================
   function bindEvents() {
     var app = document.getElementById("app");
@@ -1368,9 +1546,19 @@
 
     on("[data-action='nav']", function (el) {
       ui.view = el.getAttribute("data-view");
-      ui.confirmDeleteId = null; ui.confirmDeletePublicId = null; ui.importMsg = "";
+      ui.importMsg = ""; ui.menuOpen = false; ui.focusAfter = "h1";
       render();
       window.scrollTo(0, 0);
+    });
+    on("[data-action='menu-toggle']", function () {
+      ui.menuOpen = !ui.menuOpen;
+      ui.focusAfter = ui.menuOpen ? ".side .nav button.on" : "[data-action='menu-toggle']";
+      render();
+    });
+    on("[data-action='menu-close']", function () {
+      if (!ui.menuOpen) return;
+      ui.menuOpen = false; ui.focusAfter = "[data-action='menu-toggle']";
+      render();
     });
 
     on("[data-action='export']", function () {
@@ -1383,75 +1571,67 @@
     });
 
     // ideias
-    on("[data-action='open-form']", function () { ui.formOpen = true; ui.editingId = null; ui.draft = emptyDraft(); render(); });
-    on("[data-action='close-form']", function () { ui.formOpen = false; ui.editingId = null; ui.draft = null; render(); });
+    on("[data-action='open-form']", function () { ui.formOpen = true; ui.editingId = null; ui.draft = emptyDraft(); ui.formErrors = {}; ui.focusAfter = "[data-field='name']"; render(); });
+    on("[data-action='close-form']", function () { ui.formOpen = false; ui.editingId = null; ui.draft = null; ui.formErrors = {}; render(); });
     on("[data-action='edit']", function (el) {
       var it = byId(state.ideas, el.getAttribute("data-id"));
       if (!it) return;
       ui.editingId = it.id;
       ui.draft = { name: it.name, category: it.category, publico: it.publico, phase: it.phase, cost: String(it.cost || ""), status: it.status, notes: it.notes };
-      ui.formOpen = true; render();
-      var form = app.querySelector(".idea-form");
-      if (form) form.scrollIntoView({ behavior: "smooth", block: "center" });
+      ui.formOpen = true; ui.formErrors = {}; ui.focusAfter = "[data-field='name']";
+      render();
     });
-    on("[data-action='delete']", function (el) { ui.confirmDeleteId = el.getAttribute("data-id"); render(); });
-    on("[data-action='cancel-delete']", function () { ui.confirmDeleteId = null; render(); });
-    on("[data-action='confirm-delete']", function (el) { removeIdea(el.getAttribute("data-id")); ui.confirmDeleteId = null; persist(); });
+    on("[data-action='delete']", function (el) {
+      var removed = removeIdea(el.getAttribute("data-id"));
+      persist();
+      if (removed) showToast("Ideia excluída.", { undo: function () { restoreItem("ideas", removed); showToast("Ideia restaurada."); } });
+    });
     app.querySelectorAll("[data-field]").forEach(function (el) {
       el.addEventListener("input", function () {
+        var key = el.getAttribute("data-field");
         if (!ui.draft) ui.draft = emptyDraft();
-        ui.draft[el.getAttribute("data-field")] = el.value;
+        ui.draft[key] = el.value;
+        clearFieldError(ui.formErrors, key, el);
       });
     });
-    on("[data-action='save-form']", function () {
-      var d = ui.draft || emptyDraft();
-      if (!d.name || !d.name.trim()) {
-        var ni = app.querySelector("[data-field='name']");
-        if (ni) { ni.style.borderColor = "var(--accent)"; ni.focus(); }
-        return;
-      }
-      if (ui.editingId) updateIdea(ui.editingId, d); else addIdea(d);
-      ui.formOpen = false; ui.editingId = null; ui.draft = null;
-      persist();
+    app.querySelectorAll("input[data-field]").forEach(function (el) {
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submitIdeaForm(); } });
     });
+    on("[data-action='save-form']", function () { submitIdeaForm(); });
     var fp = app.querySelector("[data-role='filter-phase']");
     if (fp) fp.addEventListener("change", function () { ui.filterPhase = fp.value; render(); });
     var fc = app.querySelector("[data-role='filter-category']");
     if (fc) fc.addEventListener("change", function () { ui.filterCategory = fc.value; render(); });
 
     // públicos-alvo
-    on("[data-action='open-public-form']", function () { ui.publicFormOpen = true; ui.editingPublicId = null; ui.publicDraft = emptyPublicDraft(); render(); });
-    on("[data-action='close-public-form']", function () { ui.publicFormOpen = false; ui.editingPublicId = null; ui.publicDraft = null; render(); });
+    on("[data-action='open-public-form']", function () { ui.publicFormOpen = true; ui.editingPublicId = null; ui.publicDraft = emptyPublicDraft(); ui.publicErrors = {}; ui.focusAfter = "[data-pfield='nome']"; render(); });
+    on("[data-action='close-public-form']", function () { ui.publicFormOpen = false; ui.editingPublicId = null; ui.publicDraft = null; ui.publicErrors = {}; render(); });
     on("[data-action='edit-public']", function (el) {
       var it = byId(state.publics, el.getAttribute("data-id"));
       if (!it) return;
       ui.editingPublicId = it.id;
       var d = { nome: it.nome };
       PUBLIC_FIELD_KEYS.forEach(function (k) { d[k] = it[k] || ""; });
-      ui.publicDraft = d; ui.publicFormOpen = true; render();
-      var form = app.querySelector(".idea-form");
-      if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
+      ui.publicDraft = d; ui.publicFormOpen = true; ui.publicErrors = {}; ui.focusAfter = "[data-pfield='nome']";
+      render();
     });
-    on("[data-action='delete-public']", function (el) { ui.confirmDeletePublicId = el.getAttribute("data-id"); render(); });
-    on("[data-action='cancel-delete-public']", function () { ui.confirmDeletePublicId = null; render(); });
-    on("[data-action='confirm-delete-public']", function (el) { removePublic(el.getAttribute("data-id")); ui.confirmDeletePublicId = null; persist(); });
+    on("[data-action='delete-public']", function (el) {
+      var removed = removePublic(el.getAttribute("data-id"));
+      persist();
+      if (removed) showToast("Público excluído.", { undo: function () { restoreItem("publics", removed); showToast("Público restaurado."); } });
+    });
     app.querySelectorAll("[data-pfield]").forEach(function (el) {
       el.addEventListener("input", function () {
+        var key = el.getAttribute("data-pfield");
         if (!ui.publicDraft) ui.publicDraft = emptyPublicDraft();
-        ui.publicDraft[el.getAttribute("data-pfield")] = el.value;
+        ui.publicDraft[key] = el.value;
+        clearFieldError(ui.publicErrors, key, el);
       });
     });
-    on("[data-action='save-public-form']", function () {
-      var d = ui.publicDraft || emptyPublicDraft();
-      if (!d.nome || !d.nome.trim()) {
-        var ni = app.querySelector("[data-pfield='nome']");
-        if (ni) { ni.style.borderColor = "var(--accent)"; ni.focus(); }
-        return;
-      }
-      if (ui.editingPublicId) updatePublic(ui.editingPublicId, d); else addPublic(d);
-      ui.publicFormOpen = false; ui.editingPublicId = null; ui.publicDraft = null;
-      persist();
+    app.querySelectorAll("input[data-pfield]").forEach(function (el) {
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submitPublicForm(); } });
     });
+    on("[data-action='save-public-form']", function () { submitPublicForm(); });
 
     // importação por arquivo
     var fi = app.querySelector("#file-input");
@@ -1484,21 +1664,30 @@
       ui.importPreview = null;
       ui.importMsg = added + (added === 1 ? " público importado." : " públicos importados.");
       persist();
+      showToast(ui.importMsg);
     });
 
     // análise
     on("[data-action='an-tab']", function (el) { ui.analiseTab = el.getAttribute("data-tab"); render(); });
     on("[data-action='an-edit-toggle']", function () { ui.analiseEdit = !ui.analiseEdit; render(); });
     on("[data-action='an-remove']", function (el) {
-      removeAnalysisItem(el.getAttribute("data-kind"), el.getAttribute("data-group"), parseInt(el.getAttribute("data-idx"), 10));
+      var r = removeAnalysisItem(el.getAttribute("data-kind"), el.getAttribute("data-group"), parseInt(el.getAttribute("data-idx"), 10));
       persist();
+      if (r) showToast("Item removido.", { undo: function () { restoreAnalysisItem(r); showToast("Item restaurado."); } });
     });
     function submitAnalysisAdd(kind, gid) {
       var input = app.querySelector("[data-an-input='" + kind + ":" + gid + "']");
-      if (input && addAnalysisItem(kind, gid, input.value)) persist();
+      if (!input) return;
+      if (!input.value.trim()) { input.setAttribute("aria-invalid", "true"); input.focus(); return; }
+      if (addAnalysisItem(kind, gid, input.value)) {
+        ui.focusAfter = "[data-an-input='" + kind + ":" + gid + "']";
+        persist();
+        showToast("Item adicionado.");
+      }
     }
     on("[data-action='an-add']", function (el) { submitAnalysisAdd(el.getAttribute("data-kind"), el.getAttribute("data-group")); });
     app.querySelectorAll("[data-an-input]").forEach(function (el) {
+      el.addEventListener("input", function () { el.removeAttribute("aria-invalid"); });
       el.addEventListener("keydown", function (ev) {
         if (ev.key === "Enter") { var parts = el.getAttribute("data-an-input").split(":"); submitAnalysisAdd(parts[0], parts[1]); }
       });
@@ -1524,8 +1713,31 @@
       safeRender();
     });
   }
+  function draftIsDirty(d) { return !!d && Object.keys(d).some(function (k) { return String(d[k] || "").trim() && ["category", "phase", "status"].indexOf(k) < 0; }); }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      if (ui.menuOpen) { ui.menuOpen = false; ui.focusAfter = "[data-action='menu-toggle']"; render(); return; }
+      if (ui.formOpen && !draftIsDirty(ui.draft)) { ui.formOpen = false; ui.editingId = null; ui.draft = null; ui.formErrors = {}; render(); return; }
+      if (ui.publicFormOpen && !draftIsDirty(ui.publicDraft)) { ui.publicFormOpen = false; ui.editingPublicId = null; ui.publicDraft = null; ui.publicErrors = {}; render(); return; }
+      if (ui.importPreview) { ui.importPreview = null; render(); return; }
+      hideToast();
+    } else if (e.key === "Tab" && ui.menuOpen) {
+      var side = document.getElementById("app-menu");
+      if (!side) return;
+      var f = side.querySelectorAll("button:not([disabled]), a[href]");
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(max-width: 980px)");
+    var onMq = function () { if (!mq.matches && ui.menuOpen) { ui.menuOpen = false; render(); } };
+    if (mq.addEventListener) mq.addEventListener("change", onMq); else if (mq.addListener) mq.addListener(onMq);
+  }
   if (window.__FIGO_TEST__) {
-    window.__figoTest = { parsePublicsFromText: parsePublicsFromText, parseJsonPublics: parseJsonPublics, parseCsvPublics: parseCsvPublics };
+    window.__figoTest = { parseMoney: parseMoney, parsePublicsFromText: parsePublicsFromText, parseJsonPublics: parseJsonPublics, parseCsvPublics: parseCsvPublics };
   }
 })();
 </script>
