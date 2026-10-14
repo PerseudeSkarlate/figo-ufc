@@ -82,7 +82,18 @@ Na primeira vez, o app grava no banco o SWOT e o PESTEL do UFC; depois disso ele
 - **Conflitos:** cada ideia, público e grupo do SWOT/PESTEL é gravado separadamente. Se duas pessoas editarem itens diferentes ao mesmo tempo, nada se perde. Se editarem exatamente o mesmo item, vale a última gravação.
 - **Quem está digitando não é interrompido:** atualizações de outras pessoas esperam o campo perder o foco.
 
-## 4. Mudar valores fixos
+## 4. Importar públicos-alvo de um arquivo
+
+Na tela **Públicos-alvo** há uma área de upload no topo. Arraste um arquivo para ela ou clique em **escolha no computador**.
+
+- **Formatos aceitos:** PDF, Word (.docx), TXT, Markdown, JSON e CSV.
+- **Como o app lê o texto:** ele procura títulos como `Público-alvo: nome do público` para separar os públicos e itens como `Faixa etária: …`, `Interesses: …`, `Oportunidade`, `Objetivo estratégico` e `Ponto de atenção` para preencher os campos. Todos os campos do formulário de público-alvo são reconhecidos pelo nome. O que não tem campo correspondente vai para **Outras informações**.
+- **Prévia antes de importar:** o app mostra os públicos encontrados e o que foi reconhecido em cada um. Você marca quais importar e depois pode editar cada público normalmente. Públicos com o mesmo nome de um já cadastrado vêm desmarcados.
+- **CSV:** pode ter uma linha por público (colunas com o nome dos campos) ou duas colunas `Critério` e `Preenchimento` para um único público.
+- **JSON:** aceita o backup baixado pelo próprio app (só os públicos são importados) ou uma lista de públicos.
+- **PDF e Word precisam de internet:** o app carrega os leitores desses formatos da internet na primeira vez que você usa. PDFs escaneados (só imagem) não têm texto para ler.
+
+## 5. Mudar valores fixos
 
 No `index.html`, procure no início do código JavaScript:
 
@@ -92,7 +103,7 @@ No `index.html`, procure no início do código JavaScript:
 
 Para editar, use o ícone de lápis no GitHub e faça **Commit changes**. O site atualiza em 1 a 2 minutos.
 
-## 5. Problemas comuns
+## 6. Problemas comuns
 
 | Sintoma | O que verificar |
 | --- | --- |

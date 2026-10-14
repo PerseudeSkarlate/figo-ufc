@@ -245,6 +245,25 @@
   .splash p { margin: 0; max-width: 46ch; line-height: 1.5; }
   .splash .hint { font-size: 12.5px; color: var(--faint); }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  .dropzone { border: 2px dashed var(--line-strong); text-align: center; padding: 24px 22px; transition: border-color .15s, background .15s; }
+  .dropzone.over { border-color: var(--accent); background: var(--accent-tint); }
+  .dz-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .dz-sub { margin: 0; font-size: 13px; color: var(--quiet); line-height: 1.6; }
+  .dz-status { margin: 12px 0 0; font-size: 13px; color: var(--quiet); }
+  .dz-status.err { color: var(--accent); font-weight: 600; }
+  .dz-status.ok { color: var(--good); font-weight: 600; }
+  .link-btn { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
+  .imp-note { margin: 0 0 14px; font-size: 13px; color: var(--quiet); line-height: 1.55; max-width: 74ch; }
+  .imp-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: var(--bg); }
+  .imp-head { display: flex; align-items: center; gap: 10px; cursor: pointer; flex-wrap: wrap; }
+  .imp-head input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .imp-name { font-weight: 600; font-size: 14px; }
+  .imp-count { margin-left: auto; font-size: 12px; color: var(--faint); }
+  .imp-details { margin-top: 8px; font-size: 12.5px; }
+  .imp-details summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; }
+  .imp-details .group-rows { margin-top: 8px; }
+  .group-rows div { white-space: pre-line; }
+  button[disabled] { opacity: .5; cursor: not-allowed; }
   .footnote { margin-top: 28px; font-size: 12px; color: var(--faint); line-height: 1.6; }
 
   /* ================= responsive ================= */
@@ -358,6 +377,11 @@
       ["principalNecessidade", "Principal necessidade"], ["problemaResolver", "Problema que deseja resolver"],
       ["oQueConsidera", "O que considera na compra"], ["principaisObjecoes", "Principais objeções"],
       ["fatoresConfianca", "Fatores de confiança"], ["tempoDecisao", "Tempo médio de decisão"]
+    ]},
+    { id: "estrategia", label: "Análise estratégica", fields: [
+      ["oportunidade", "Oportunidade", "area"], ["analiseMercado", "Análise do potencial de mercado", "area"],
+      ["objetivoEstrategico", "Objetivo estratégico", "area"], ["pontoAtencao", "Ponto de atenção", "area"],
+      ["outros", "Outras informações", "area"]
     ]},
     { id: "branding", label: "Branding — Figo × UFC", fields: [
       ["relacaoHoje", "Relação com a marca hoje"], ["relacaoDesejada", "Relação desejada"],
@@ -483,6 +507,307 @@
   }
   function uid() { return "id" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  // ---------------- importação de públicos-alvo por arquivo ----------------
+  var PDF_JS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
+  var PDF_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  var MAMMOTH_URL = "https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js";
+
+  function norm(s) {
+    return String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  var LABEL_TO_KEY = {}, AREA_KEYS = {}, FIELD_LABEL = {};
+  PUBLIC_FIELD_GROUPS.forEach(function (g) {
+    g.fields.forEach(function (f) {
+      FIELD_LABEL[f[0]] = f[1];
+      LABEL_TO_KEY[norm(f[1])] = f[0];
+      var noParen = norm(String(f[1]).replace(/\(.*?\)/g, ""));
+      if (noParen) LABEL_TO_KEY[noParen] = f[0];
+      if (f[2] === "area") AREA_KEYS[f[0]] = true;
+    });
+  });
+  var LABEL_ALIASES = {
+    "faixa etaria sugerida": "faixaEtaria", "faixa etaria": "faixaEtaria", "idade": "faixaEtaria",
+    "comportamento de consumo": "habitosCompra", "perfil de consumo": "habitosCompra",
+    "analise do potencial de mercado": "analiseMercado", "potencial de mercado": "analiseMercado",
+    "objetivo estrategico": "objetivoEstrategico",
+    "ponto de atencao": "pontoAtencao", "pontos de atencao": "pontoAtencao",
+    "oportunidades": "oportunidade"
+  };
+  Object.keys(LABEL_ALIASES).forEach(function (k) { LABEL_TO_KEY[k] = LABEL_ALIASES[k]; });
+
+  function keyFor(label) {
+    if (PUBLIC_FIELD_KEYS.indexOf(label) >= 0) return label;
+    return LABEL_TO_KEY[norm(label)] || null;
+  }
+  function shorten(t, n) { t = String(t || ""); return t.length > n ? t.slice(0, n - 1) + "…" : t; }
+  function fallbackNameFrom(fileName) {
+    return String(fileName || "Público importado").replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim() || "Público importado";
+  }
+  function userError(msg) { var e = new Error(msg); e.userMessage = msg; return e; }
+
+  var BULLET_RE = /^[\u2022\u25CF\u25AA\u25A0\u25E6\u00B7\u2023\u2043\uF0B7\uF0A7*\-\u2013\u2014]\s+/;
+  var START_RE = /^(?:\d+\s*[.)\-\u2013]\s*)?(?:p[úu]blico[\s-]*alvo|persona|segmento)\s*[:\-\u2013\u2014]\s*(.*)$/i;
+
+  function parseLabelLine(body) {
+    var m = /^(.{1,60}?)\s*[:\uFF1A]\s*(.*)$/.exec(body);
+    if (!m) return null;
+    var key = LABEL_TO_KEY[norm(m[1])];
+    return key ? { key: key, value: m[2].trim() } : null;
+  }
+  function headingKey(ln) {
+    var n = norm(ln.replace(/[:\uFF1A]\s*$/, ""));
+    if (!n || n.length > 60) return null;
+    if (n === "perfil do publico" || n === "perfil") return "PERFIL";
+    return LABEL_TO_KEY[n] || null;
+  }
+
+  // lê um trecho (um público) e devolve { campo: texto }
+  function parseSegment(lines, maxLen) {
+    var acc = {}, cur = null, pendingBreak = false;
+    function addText(key, line, newPara) {
+      var paras = acc[key] || (acc[key] = []);
+      if (!paras.length || newPara) { paras.push(line); return; }
+      var last = paras[paras.length - 1];
+      paras[paras.length - 1] = (/-$/.test(last) && /^[a-zà-ÿ]/.test(line)) ? last + line : last + " " + line;
+    }
+    for (var i = 0; i < lines.length; i++) {
+      var ln = lines[i];
+      if (!ln) { if (cur && cur.kind === "inline") cur = null; else pendingBreak = true; continue; }
+      var hk = headingKey(ln);
+      if (hk) {
+        cur = hk === "PERFIL" ? null : { key: hk, kind: "section", last: "" };
+        if (cur && !acc[cur.key]) acc[cur.key] = [];
+        pendingBreak = false; continue;
+      }
+      var isBullet = BULLET_RE.test(ln);
+      var body = isBullet ? ln.replace(BULLET_RE, "") : ln;
+      var pl = parseLabelLine(body);
+      if (pl) {
+        cur = { key: pl.key, kind: pl.value ? "inline" : "section", last: pl.value };
+        if (pl.value) addText(pl.key, pl.value, true); else if (!acc[pl.key]) acc[pl.key] = [];
+        pendingBreak = false; continue;
+      }
+      if (isBullet) {
+        var un = /^(.{1,60}?)\s*:\s*(.+)$/.exec(body);
+        addText("outros", un ? un[1].trim() + ": " + un[2].trim() : body, true);
+        cur = { key: "outros", kind: "inline", last: body };
+        pendingBreak = false; continue;
+      }
+      if (!cur) { addText("outros", ln, true); cur = { key: "outros", kind: "inline", last: ln }; pendingBreak = false; continue; }
+      var newPara = pendingBreak || (cur.last && /[.!?]$/.test(cur.last) && /^[A-ZÀ-Ý0-9]/.test(ln) && cur.last.length < 0.8 * maxLen);
+      addText(cur.key, ln, newPara);
+      cur.last = ln; pendingBreak = false;
+    }
+    var out = {};
+    Object.keys(acc).forEach(function (k) {
+      var paras = acc[k].map(function (t) { return t.trim(); }).filter(Boolean);
+      if (!paras.length) return;
+      out[k] = AREA_KEYS[k] ? paras.join("\n\n") : paras.join("; ").replace(/\.$/, "");
+    });
+    return out;
+  }
+
+  // texto livre (PDF, Word, TXT, MD) -> lista de públicos
+  function parsePublicsFromText(text, fallbackName) {
+    text = String(text || "").replace(/\r/g, "").replace(/([^\n])[ \t]*([\u25CF\u2022\u25AA\uF0B7])[ \t]*/g, "$1\n$2 ");
+    var lines = text.split("\n").map(function (l) { return l.replace(/\s+/g, " ").trim(); });
+    var maxLen = 0;
+    lines.forEach(function (l) { if (l.length > maxLen) maxLen = l.length; });
+
+    var starts = [];
+    for (var i = 0; i < lines.length; i++) {
+      var m = START_RE.exec(lines[i]);
+      if (!m) continue;
+      var title = m[1].trim(), j = i + 1, extra = 0;
+      while (extra < 2 && j < lines.length && lines[j] && /^[a-zà-ÿ]/.test(lines[j]) && !/[.!?]$/.test(title)
+             && !BULLET_RE.test(lines[j]) && !headingKey(lines[j]) && !parseLabelLine(lines[j])) {
+        title += " " + lines[j]; j++; extra++;
+      }
+      starts.push({ bodyFrom: j, headIdx: i, title: title.replace(/[\s:;,.\-]+$/, "") });
+      i = j - 1;
+    }
+    var items = [];
+    if (!starts.length) {
+      var f = parseSegment(lines, maxLen);
+      var recognized = Object.keys(f).filter(function (k) { return k !== "outros"; }).length;
+      if (recognized) items.push({ nome: fallbackName || "Público importado", fields: f });
+      return items;
+    }
+    starts.forEach(function (st, idx) {
+      var to = idx + 1 < starts.length ? starts[idx + 1].headIdx : lines.length;
+      var fields = parseSegment(lines.slice(st.bodyFrom, to), maxLen);
+      items.push({ nome: st.title || (fallbackName || "Público") + " " + (idx + 1), fields: fields });
+    });
+    return items;
+  }
+
+  function mapPairs(pairs) {
+    var fields = {};
+    pairs.forEach(function (pr) {
+      var label = String(pr[0] || "").trim(), val = String(pr[1] == null ? "" : pr[1]).trim();
+      if (!label || !val) return;
+      var key = keyFor(label);
+      if (!key) { key = "outros"; val = label + ": " + val; }
+      fields[key] = fields[key] ? fields[key] + (AREA_KEYS[key] ? "\n\n" : "; ") + val : val;
+    });
+    return fields;
+  }
+
+  function parseJsonPublics(text, fallbackName) {
+    var data;
+    try { data = JSON.parse(text); } catch (e) { throw userError("Esse arquivo JSON não é válido."); }
+    var list = Array.isArray(data) ? data : (data && Array.isArray(data.publics) ? data.publics : (data && typeof data === "object" ? [data] : []));
+    var skip = { id: 1, ord: 1, nome: 1, name: 1, titulo: 1, "título": 1, publico: 1, "público": 1 };
+    var out = [];
+    list.forEach(function (o, i) {
+      if (!o || typeof o !== "object") return;
+      var nome = String(o.nome || o.name || o.titulo || o["título"] || o.publico || o["público"] || "").trim();
+      var pairs = [];
+      Object.keys(o).forEach(function (k) { if (!skip[k] && o[k] != null && typeof o[k] !== "object") pairs.push([k, o[k]]); });
+      var fields = mapPairs(pairs);
+      if (!nome && !Object.keys(fields).length) return;
+      out.push({ nome: nome || (fallbackName || "Público") + " " + (i + 1), fields: fields });
+    });
+    return out;
+  }
+
+  function parseCsvRows(text) {
+    var first = (text.split(/\r?\n/)[0] || "");
+    var delim = first.split(";").length > first.split(",").length ? ";" : ",";
+    var rows = [], row = [], cell = "", q = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === delim) { row.push(cell); cell = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (x) { return String(x).trim(); }); });
+  }
+  function parseCsvPublics(text, fallbackName) {
+    var rows = parseCsvRows(String(text || "").replace(/^\uFEFF/, ""));
+    if (rows.length < 2) return [];
+    var header = rows[0].map(norm);
+    var vertical = ["criterio", "campo", "item"].indexOf(header[0]) >= 0 && ["preenchimento", "valor", "resposta"].indexOf(header[1]) >= 0;
+    if (vertical) {
+      var f = mapPairs(rows.slice(1).map(function (r) { return [r[0], r[1]]; }));
+      var nm = f.nome; delete f.nome;
+      return Object.keys(f).length ? [{ nome: fallbackName || "Público importado", fields: f }] : [];
+    }
+    var nameIdx = -1;
+    header.forEach(function (h, i) { if (nameIdx < 0 && ["nome", "nome do publico", "publico", "publico alvo", "name"].indexOf(h) >= 0) nameIdx = i; });
+    var out = [];
+    rows.slice(1).forEach(function (r, ri) {
+      var pairs = [];
+      rows[0].forEach(function (h, i) { if (i !== nameIdx) pairs.push([h, r[i]]); });
+      var fields = mapPairs(pairs);
+      var nome = nameIdx >= 0 ? String(r[nameIdx] || "").trim() : "";
+      if (!nome && !Object.keys(fields).length) return;
+      out.push({ nome: nome || (fallbackName || "Público") + " " + (ri + 1), fields: fields });
+    });
+    return out;
+  }
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var el = document.createElement("script");
+      el.src = src; el.onload = resolve; el.onerror = function () { reject(new Error("load")); };
+      document.head.appendChild(el);
+    });
+  }
+  var libPromises = {};
+  function ensureLib(name) {
+    if (libPromises[name]) return libPromises[name];
+    var p;
+    if (name === "pdf") {
+      p = loadScript(PDF_JS_URL).then(function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL; });
+    } else {
+      p = loadScript(MAMMOTH_URL);
+    }
+    libPromises[name] = p.catch(function () {
+      libPromises[name] = null;
+      throw userError("Não consegui carregar o leitor de " + (name === "pdf" ? "PDF" : "Word") + " (é preciso estar conectado à internet). Tente de novo ou use um arquivo TXT ou JSON.");
+    });
+    return libPromises[name];
+  }
+  function extractPdfText(buf) {
+    return ensureLib("pdf").then(function () {
+      return window.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+    }).then(function (doc) {
+      var out = [], chain = Promise.resolve();
+      for (var p = 1; p <= doc.numPages; p++) {
+        (function (n) {
+          chain = chain.then(function () { return doc.getPage(n); }).then(function (page) { return page.getTextContent(); }).then(function (tc) {
+            var line = "", lastY = null;
+            tc.items.forEach(function (it) {
+              if (typeof it.str !== "string") return;
+              var y = it.transform ? it.transform[5] : null;
+              if (lastY !== null && y !== null && Math.abs(y - lastY) > 2) { out.push(line); line = ""; }
+              line += it.str;
+              if (it.hasEOL) { out.push(line); line = ""; lastY = null; } else lastY = y;
+            });
+            if (line) out.push(line);
+          });
+        })(p);
+      }
+      return chain.then(function () { return out.join("\n"); });
+    }).catch(function (err) {
+      if (err && err.userMessage) throw err;
+      throw userError("Não consegui ler esse PDF. Se ele for protegido ou escaneado (imagem), tente exportar como texto ou Word.");
+    });
+  }
+
+  function readPublicsFromFile(file) {
+    var name = file.name || "", ext = (name.split(".").pop() || "").toLowerCase(), fb = fallbackNameFrom(name);
+    if (file.size > 10 * 1024 * 1024) return Promise.reject(userError("O arquivo passa de 10 MB."));
+    if (ext === "json") return file.text().then(function (t) { return parseJsonPublics(t, fb); });
+    if (ext === "csv") return file.text().then(function (t) { return parseCsvPublics(t, fb); });
+    if (ext === "txt" || ext === "md") return file.text().then(function (t) { return parsePublicsFromText(t, fb); });
+    if (ext === "pdf") {
+      return file.arrayBuffer().then(extractPdfText).then(function (t) {
+        if (!t.trim()) throw userError("Esse PDF não tem texto selecionável (parece ser uma imagem escaneada).");
+        return parsePublicsFromText(t, fb);
+      });
+    }
+    if (ext === "docx") {
+      return file.arrayBuffer().then(function (buf) {
+        return ensureLib("mammoth").then(function () { return window.mammoth.extractRawText({ arrayBuffer: buf }); });
+      }).then(function (r) { return parsePublicsFromText(r.value, fb); }).catch(function (err) {
+        if (err && err.userMessage) throw err;
+        throw userError("Não consegui ler esse arquivo Word.");
+      });
+    }
+    return Promise.reject(userError("Formato não suportado. Use PDF, Word (.docx), TXT, Markdown, JSON ou CSV."));
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    ui.importPreview = null; ui.importMsg = "";
+    ui.importState = { status: "reading", fileName: file.name };
+    render();
+    readPublicsFromFile(file).then(function (items) {
+      if (!items.length) {
+        ui.importState = { status: "error", fileName: file.name, message: "Não encontrei nenhum público-alvo nesse arquivo. Dica: cada público precisa de um título como “Público-alvo: nome do público”, seguido de itens como “Faixa etária: …” e “Interesses: …”." };
+        render(); return;
+      }
+      var existing = state.publics.map(function (p) { return norm(p.nome); });
+      ui.importPreview = {
+        fileName: file.name,
+        items: items.map(function (it) {
+          var dup = existing.indexOf(norm(it.nome)) >= 0;
+          return { nome: it.nome, fields: it.fields, dup: dup, checked: !dup };
+        })
+      };
+      ui.importState = null;
+      render();
+    }).catch(function (err) {
+      ui.importState = { status: "error", fileName: file.name, message: (err && err.userMessage) || "Não consegui ler esse arquivo." };
+      render();
+    });
+  }
+
   // ---------------- state ----------------
   function defaultState() {
     return { ideas: [], publics: [], swot: cloneLists(DEFAULT_SWOT), pestel: cloneLists(DEFAULT_PESTEL) };
@@ -507,7 +832,8 @@
     formOpen: false, editingId: null, confirmDeleteId: null,
     filterPhase: "all", filterCategory: "all", draft: null,
     publicFormOpen: false, editingPublicId: null, confirmDeletePublicId: null, publicDraft: null,
-    analiseTab: "swot", analiseEdit: false
+    analiseTab: "swot", analiseEdit: false,
+    importState: null, importPreview: null, importMsg: ""
   };
   var net = { status: REMOTE ? "loading" : "local" };   // local | loading | online | saving | offline
   var remoteSnap = { ideas: {}, publics: {}, swot: {}, pestel: {} };
@@ -926,6 +1252,7 @@
   // ================= view: públicos =================
   function viewPublicos() {
     var html = '<div class="grid">';
+    html += renderImportCard();
     if (ui.publicFormOpen) html += '<div class="s12">' + renderPublicForm() + '</div>';
     if (!state.publics.length) {
       if (!ui.publicFormOpen) html += '<div class="s12"><div class="empty">Nenhum público-alvo cadastrado ainda. Use o botão acima para registrar o primeiro.</div></div>';
@@ -940,6 +1267,9 @@
     var isEdit = !!ui.editingPublicId;
     var groups = PUBLIC_FIELD_GROUPS.map(function (g) {
       var fields = g.fields.map(function (f) {
+        if (f[2] === "area") {
+          return '<label class="field"><span class="lbl">' + esc(f[1]) + '</span><textarea class="f" rows="4" data-pfield="' + f[0] + '">' + esc(d[f[0]] || "") + '</textarea></label>';
+        }
         return '<label class="field"><span class="lbl">' + esc(f[1]) + '</span><input class="f" data-pfield="' + f[0] + '" value="' + esc(d[f[0]] || "") + '"></label>';
       }).join("");
       return '<div class="gblock"><div class="gtitle">' + esc(g.label) + '</div><div class="gfields">' + fields + '</div></div>';
@@ -967,6 +1297,35 @@
           : '<button class="icon-btn danger" data-action="delete-public" data-id="' + p.id + '">Excluir</button>')
       + '</div></div>'
       + (anyFilled ? '<div class="group-blocks">' + blocks + '</div>' : '<p class="public-notes">Nenhum critério preenchido ainda — clique em editar para completar.</p>');
+  }
+
+  function renderImportCard() {
+    var pv = ui.importPreview, st = ui.importState;
+    if (pv) {
+      var n = pv.items.filter(function (i) { return i.checked; }).length;
+      var items = pv.items.map(function (it, idx) {
+        var keys = Object.keys(it.fields);
+        var rows = keys.map(function (k) { return '<div><b>' + esc(FIELD_LABEL[k] || k) + ':</b> ' + esc(shorten(it.fields[k], 160)) + '</div>'; }).join("");
+        return '<div class="imp-item"><label class="imp-head"><input type="checkbox" data-import-check="' + idx + '"' + (it.checked ? " checked" : "") + '>'
+          + '<span class="imp-name">' + esc(it.nome) + '</span>'
+          + (it.dup ? '<span class="tag status-validacao">já existe um público com esse nome</span>' : '')
+          + '<span class="imp-count">' + keys.length + (keys.length === 1 ? " campo" : " campos") + '</span></label>'
+          + '<details class="imp-details"><summary>Ver o que foi reconhecido</summary><div class="group-rows">' + rows + '</div></details></div>';
+      }).join("");
+      return '<div class="s12"><div class="card idea-form"><h3>Importar de “' + esc(pv.fileName) + '”</h3>'
+        + '<p class="imp-note">Encontrei ' + pv.items.length + (pv.items.length === 1 ? " público" : " públicos")
+        + '. Marque os que quer importar; depois você pode editar cada um. Os campos são reconhecidos pelos títulos do texto (Faixa etária, Interesses, Oportunidade…); o que não tem campo correspondente vai para “Outras informações”.</p>'
+        + items
+        + '<div class="form-actions"><button class="btn-primary" data-action="import-confirm"' + (n ? "" : " disabled") + '>Importar ' + n + (n === 1 ? " selecionado" : " selecionados") + '</button>'
+        + '<button class="btn-ghost" data-action="import-cancel">Cancelar</button></div></div></div>';
+    }
+    var msg = "";
+    if (st && st.status === "reading") msg = '<p class="dz-status">Lendo “' + esc(st.fileName) + '”…</p>';
+    else if (st && st.status === "error") msg = '<p class="dz-status err">' + esc(st.message) + '</p>';
+    else if (ui.importMsg) msg = '<p class="dz-status ok">' + esc(ui.importMsg) + '</p>';
+    return '<section class="card s12 dropzone" data-role="dropzone"><div class="dz-title">Importar públicos-alvo de um arquivo</div>'
+      + '<p class="dz-sub">Arraste um arquivo para cá ou <button class="link-btn" data-action="pick-file">escolha no computador</button>. Aceita PDF, Word (.docx), TXT, Markdown, JSON e CSV.</p>'
+      + '<input type="file" id="file-input" accept=".pdf,.docx,.txt,.md,.json,.csv" hidden>' + msg + '</section>';
   }
 
   // ================= view: análise =================
@@ -1009,7 +1368,7 @@
 
     on("[data-action='nav']", function (el) {
       ui.view = el.getAttribute("data-view");
-      ui.confirmDeleteId = null; ui.confirmDeletePublicId = null;
+      ui.confirmDeleteId = null; ui.confirmDeletePublicId = null; ui.importMsg = "";
       render();
       window.scrollTo(0, 0);
     });
@@ -1094,6 +1453,39 @@
       persist();
     });
 
+    // importação por arquivo
+    var fi = app.querySelector("#file-input");
+    if (fi) fi.addEventListener("change", function () { var f = fi.files && fi.files[0]; fi.value = ""; handleFile(f); });
+    on("[data-action='pick-file']", function () { var i = app.querySelector("#file-input"); if (i) i.click(); });
+    var dz = app.querySelector("[data-role='dropzone']");
+    if (dz) {
+      ["dragenter", "dragover"].forEach(function (t) { dz.addEventListener(t, function (e) { e.preventDefault(); dz.classList.add("over"); }); });
+      ["dragleave", "drop"].forEach(function (t) { dz.addEventListener(t, function (e) { e.preventDefault(); dz.classList.remove("over"); }); });
+      dz.addEventListener("drop", function (e) { handleFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
+    }
+    app.querySelectorAll("[data-import-check]").forEach(function (el) {
+      el.addEventListener("change", function () {
+        var it = ui.importPreview && ui.importPreview.items[parseInt(el.getAttribute("data-import-check"), 10)];
+        if (it) { it.checked = el.checked; render(); }
+      });
+    });
+    on("[data-action='import-cancel']", function () { ui.importPreview = null; render(); });
+    on("[data-action='import-confirm']", function () {
+      var pv = ui.importPreview;
+      if (!pv) return;
+      var added = 0;
+      pv.items.forEach(function (it) {
+        if (!it.checked) return;
+        var d = emptyPublicDraft();
+        d.nome = it.nome;
+        Object.keys(it.fields).forEach(function (k) { if (k in d) d[k] = it.fields[k]; });
+        addPublic(d); added++;
+      });
+      ui.importPreview = null;
+      ui.importMsg = added + (added === 1 ? " público importado." : " públicos importados.");
+      persist();
+    });
+
     // análise
     on("[data-action='an-tab']", function (el) { ui.analiseTab = el.getAttribute("data-tab"); render(); });
     on("[data-action='an-edit-toggle']", function () { ui.analiseEdit = !ui.analiseEdit; render(); });
@@ -1114,6 +1506,7 @@
   }
 
   // ---------------- boot ----------------
+  ["dragover", "drop"].forEach(function (t) { window.addEventListener(t, function (e) { e.preventDefault(); }); });
   if (REMOTE) {
     render();                 // tela de carregamento
     refetch();                // primeira leitura
@@ -1130,6 +1523,9 @@
       try { state = normalizeState(JSON.parse(e.newValue)); } catch (err) {}
       safeRender();
     });
+  }
+  if (window.__FIGO_TEST__) {
+    window.__figoTest = { parsePublicsFromText: parsePublicsFromText, parseJsonPublics: parseJsonPublics, parseCsvPublics: parseCsvPublics };
   }
 })();
 </script>
