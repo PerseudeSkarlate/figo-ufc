@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<!--
+  Figo × UFC — plataforma de ideias, orçamento e tempo.
+  Arquivo único (HTML + CSS + JS), sem build. Veja o README.md para publicar no GitHub Pages
+  e para ligar o compartilhamento em tempo real (Firebase). A configuração fica no objeto CONFIG, no início do código JavaScript.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Figo × UFC — Ideias, orçamento e tempo</title>
+<meta name="theme-color" content="#6D28D9">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='10,1 22,1 31,10 31,22 22,31 10,31 1,22 1,10' fill='%236D28D9'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #221B33;
+    --quiet: #6E6580;
+    --faint: #9C93AD;
+    --line: #E4DEEF;
+    --line-strong: #D3C9E6;
+    --bg: #F6F4FA;
+    --panel: #FFFFFF;
+    --accent: #6D28D9;
+    --accent-tint: #F1EAFB;
+    --accent-ink: #4C1D95;
+    --good: #2F6B4F;
+    --good-tint: #E7F2EC;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ECE9F5; --quiet: #A79EBC; --faint: #7A7296;
+      --line: #332B47; --line-strong: #443A5C;
+      --bg: #120F1A; --panel: #1E1930;
+      --accent: #A78BFA; --accent-tint: #2C2340; --accent-ink: #D9CCFB;
+      --good: #6FBF95; --good-tint: #17251E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ECE9F5; --quiet: #A79EBC; --faint: #7A7296;
+    --line: #332B47; --line-strong: #443A5C;
+    --bg: #120F1A; --panel: #1E1930;
+    --accent: #A78BFA; --accent-tint: #2C2340; --accent-ink: #D9CCFB;
+    --good: #6FBF95; --good-tint: #17251E;
+  }
+  * { box-sizing: inherit; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ================= platform shell ================= */
+  .shell { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 100vh; }
+
+  .side {
+    position: sticky; top: 0; height: 100vh; align-self: start;
+    display: flex; flex-direction: column; padding: 22px 14px 18px;
+    background: var(--panel); border-right: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; padding: 2px 10px 24px; }
+  .brand-mark {
+    width: 34px; height: 34px; flex: none; background: var(--accent); color: #fff;
+    font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center;
+    clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
+  }
+  .brand-name { font-weight: 800; font-size: 15px; letter-spacing: -0.01em; line-height: 1.15; }
+  .brand-sub { font-size: 11.5px; color: var(--faint); }
+
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav button {
+    display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+    font-family: inherit; font-size: 13.5px; font-weight: 500; color: var(--quiet);
+    background: none; border: none; padding: 10px 11px; border-radius: 9px; cursor: pointer;
+  }
+  .nav button svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .nav button:hover { background: var(--accent-tint); color: var(--ink); }
+  .nav button.on { background: var(--accent-tint); color: var(--accent-ink); font-weight: 600; }
+  .nav .badge { margin-left: auto; font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  .side-foot { margin-top: auto; padding: 16px 10px 0; border-top: 1px solid var(--line); }
+  .mini-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--quiet); margin-bottom: 7px; }
+  .mini-label b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mini-track { height: 6px; background: var(--accent-tint); border-radius: 4px; overflow: hidden; }
+  .mini-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width .35s ease; }
+  .sync-note { display: flex; align-items: center; gap: 7px; margin-top: 14px; font-size: 11.5px; color: var(--faint); line-height: 1.3; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); flex: none; }
+  .sync-dot.busy { background: var(--faint); animation: pulse 1s ease-in-out infinite; }
+  .sync-dot.off { background: var(--faint); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .main { padding: 34px 40px 88px; min-width: 0; max-width: 1360px; width: 100%; }
+  .topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+  .topbar .kicker { font-size: 12.5px; color: var(--accent); font-weight: 600; margin: 0 0 6px; }
+  .topbar h1 { margin: 0 0 5px; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .topbar .sub { margin: 0; color: var(--quiet); font-size: 14px; max-width: 62ch; line-height: 1.5; }
+  .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* ================= block grid ================= */
+  .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  .s12 { grid-column: span 12; } .s8 { grid-column: span 8; } .s7 { grid-column: span 7; }
+  .s6 { grid-column: span 6; } .s5 { grid-column: span 5; } .s4 { grid-column: span 4; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; min-width: 0; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .card-head h2 { margin: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; }
+  .card-head .hint { font-size: 12px; color: var(--faint); }
+
+  /* stat blocks */
+  .stat { padding: 20px 22px; }
+  .score-label { font-size: 12px; color: var(--quiet); margin: 0 0 8px; }
+  .score-value { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .score-value.accent { color: var(--accent); }
+  .score-value.good { color: var(--good); }
+  .score-sub { font-size: 12px; color: var(--faint); margin: 6px 0 0; }
+  .stat .mini-track { margin-top: 12px; }
+
+  /* ================= balance bars ================= */
+  .bar-row { padding: 11px 0; }
+  .bar-row + .bar-row { border-top: 1px solid var(--line); }
+  .bar-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .bar-name { font-size: 13.5px; font-weight: 500; }
+  .bar-figs { font-size: 12.5px; color: var(--quiet); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar-figs b { color: var(--ink); font-weight: 600; }
+  .bar-track { position: relative; height: 9px; background: var(--accent-tint); border-radius: 5px; }
+  .bar-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 5px; background: var(--accent); transition: width .35s ease; }
+  .bar-fill.under-target { background: var(--faint); }
+  .bar-target { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .35; }
+  .legend { display: flex; gap: 18px; margin-top: 12px; font-size: 12px; color: var(--faint); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* ================= buttons & forms ================= */
+  .new-idea-toggle {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
+    background: var(--accent); color: #fff; border: none; border-radius: 999px;
+    font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .new-idea-toggle:hover { background: var(--accent-ink); }
+  .new-idea-toggle .plus { font-size: 16px; line-height: 0; }
+  .btn-primary, .btn-ghost { font-family: inherit; font-size: 13.5px; font-weight: 600; border-radius: 8px; padding: 9px 16px; cursor: pointer; }
+  .btn-primary { background: var(--accent); color: #fff; border: none; }
+  .btn-primary:hover { background: var(--accent-ink); }
+  .btn-ghost { background: transparent; color: var(--quiet); border: 1px solid var(--line-strong); }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--faint); }
+  .icon-btn { background: none; border: none; color: var(--faint); font-size: 12px; cursor: pointer; font-family: inherit; padding: 5px 10px; border-radius: 6px; }
+  .icon-btn:hover { color: var(--ink); background: var(--accent-tint); }
+  .icon-btn.danger:hover { color: var(--accent); }
+  .icon-btn.confirm { color: #fff; background: var(--accent); }
+  .icon-btn.confirm:hover { background: var(--accent-ink); color: #fff; }
+
+  .idea-form { border-color: var(--line-strong); }
+  .idea-form h3 { margin: 0 0 18px; font-size: 16px; font-weight: 700; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+  .field-grid.cols3 { grid-template-columns: repeat(3, 1fr); }
+  .field-grid .full { grid-column: 1 / -1; }
+  label.field { display: block; }
+  label.field span.lbl { display: block; font-size: 12px; color: var(--quiet); margin-bottom: 5px; }
+  input.f, select.f, textarea.f {
+    width: 100%; font-family: inherit; font-size: 14px; color: var(--ink);
+    padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg);
+  }
+  input.f:focus, select.f:focus, textarea.f:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+  textarea.f { resize: vertical; min-height: 54px; }
+  .form-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+  select.filter {
+    font-family: inherit; font-size: 12.5px; color: var(--ink); background: var(--panel);
+    border: 1px solid var(--line-strong); border-radius: 999px; padding: 6px 12px;
+  }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--faint); font-size: 13.5px; border: 1px dashed var(--line-strong); border-radius: 12px; }
+
+  /* ================= idea blocks ================= */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+  .idea-card { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .ic-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ic-cost { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .ic-name { font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .ic-meta { font-size: 12.5px; color: var(--quiet); line-height: 1.5; }
+  .ic-meta .dot { margin: 0 6px; color: var(--faint); }
+  .ic-notes { font-size: 12.5px; color: var(--faint); line-height: 1.5; }
+  .ic-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: auto; padding-top: 8px; }
+  .tag { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .tag.status-ideia { background: var(--line); color: var(--quiet); }
+  .tag.status-validacao { background: #FBF0D9; color: #92620B; }
+  .tag.status-aprovada { background: var(--good-tint); color: var(--good); }
+
+  /* ================= comparison table ================= */
+  .table-scroll { overflow-x: auto; margin: 0 -22px -20px; border-top: 1px solid var(--line); border-radius: 0 0 16px 16px; }
+  table.compare { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+  table.compare th, table.compare td { padding: 11px 16px; text-align: left; white-space: nowrap; }
+  table.compare th { background: var(--accent-tint); color: var(--accent-ink); font-weight: 600; font-size: 12px; }
+  table.compare td { border-top: 1px solid var(--line); }
+  table.compare td.num, table.compare th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.compare tr.total td { border-top: 2px solid var(--line-strong); font-weight: 700; }
+  table.compare td.name { white-space: normal; font-weight: 500; }
+  .table-empty { margin-top: 2px; }
+
+  /* ================= público-alvo blocks ================= */
+  .form-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 18px; }
+  .gblock { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; background: var(--bg); min-width: 0; }
+  .gtitle { font-size: 13px; font-weight: 700; color: var(--accent-ink); margin-bottom: 12px; line-height: 1.35; }
+  .gfields { display: grid; gap: 11px; }
+  .group-blocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .group-rows { display: grid; gap: 6px; font-size: 12.5px; color: var(--quiet); line-height: 1.45; }
+  .group-rows b { color: var(--ink); font-weight: 600; }
+  .public-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .public-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .public-notes { font-size: 12.5px; color: var(--faint); max-width: 68ch; margin: 0; }
+  .head-actions { display: flex; gap: 4px; }
+
+  /* ================= analysis blocks ================= */
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px; background: var(--panel); }
+  .seg button { font-family: inherit; font-size: 13px; font-weight: 600; color: var(--quiet); background: none; border: none; padding: 6px 16px; border-radius: 999px; cursor: pointer; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .an-axis { font-size: 12px; font-weight: 600; color: var(--faint); margin: 2px 0 -6px; grid-column: span 12; }
+  .s4w { grid-column: span 4; }
+  .an-card { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 18px 20px; min-width: 0; height: 100%; }
+  .an-card.tone-pos, .an-card.tone-neutral { border-top: 3px solid var(--accent); }
+  .an-card.tone-neg { border-top: 3px solid var(--faint); }
+  .an-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .an-letter { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-tint); color: var(--accent-ink); font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .an-title { font-size: 15px; font-weight: 700; }
+  .an-sub { font-size: 11.5px; color: var(--faint); }
+  .an-count { margin-left: auto; font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  ul.an-list { list-style: none; margin: 0; padding: 0; }
+  ul.an-list li { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; font-size: 13px; line-height: 1.5; padding: 8px 0; border-top: 1px solid var(--line); }
+  ul.an-list li:first-child { border-top: none; }
+  .an-x { background: none; border: none; color: var(--faint); font-size: 16px; line-height: 1; cursor: pointer; padding: 0 4px; flex: none; font-family: inherit; }
+  .an-x:hover { color: var(--accent); }
+  .an-add { display: flex; gap: 8px; margin-top: 10px; }
+  .an-add input.f { flex: 1; min-width: 0; padding: 7px 10px; font-size: 13px; }
+  .an-add .btn-ghost { padding: 7px 12px; font-size: 12.5px; white-space: nowrap; }
+
+  .splash { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 24px; color: var(--quiet); font-size: 14px; }
+  .splash .brand-mark { width: 44px; height: 44px; font-size: 19px; }
+  .splash p { margin: 0; max-width: 46ch; line-height: 1.5; }
+  .splash .hint { font-size: 12.5px; color: var(--faint); }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  .footnote { margin-top: 28px; font-size: 12px; color: var(--faint); line-height: 1.6; }
+
+  /* ================= responsive ================= */
+  @media (max-width: 1200px) {
+    .s4w { grid-column: span 6; }
+    .main { padding: 30px 28px 80px; }
+  }
+  @media (max-width: 1100px) {
+    .s7, .s5, .s8 { grid-column: span 12; }
+  }
+  @media (max-width: 980px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .side {
+      position: sticky; top: 0; z-index: 20; height: auto; flex-direction: row; align-items: center; gap: 10px;
+      padding: 10px 14px; border-right: none; border-bottom: 1px solid var(--line); overflow-x: auto;
+    }
+    .brand { padding: 0 8px 0 0; flex: none; }
+    .brand-sub, .side-foot { display: none; }
+    .nav { flex-direction: row; gap: 4px; }
+    .nav button { width: auto; white-space: nowrap; padding: 8px 12px; }
+    .main { padding: 24px 18px 80px; }
+    .topbar h1 { font-size: 24px; }
+  }
+  @media (max-width: 720px) {
+    .s4, .s6, .s4w { grid-column: span 12; }
+    .field-grid, .field-grid.cols3 { grid-template-columns: 1fr; }
+    .cards-grid, .form-groups, .group-blocks { grid-template-columns: 1fr; }
+    .nav .badge { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<noscript>Este app precisa de JavaScript para funcionar.</noscript>
+
+<script>
+(function () {
+  "use strict";
+
+  // ============ CONFIGURAÇÃO ============
+  // Para compartilhar os dados em tempo real com a equipe, cole aqui a URL do seu Firebase Realtime Database
+  // (ex.: "https://meu-projeto-default-rtdb.firebaseio.com"). Deixe vazio para usar só o armazenamento
+  // local do navegador (cada pessoa vê apenas os próprios dados). Passo a passo no README.md.
+  var CONFIG = {
+    firebaseDatabaseUrl: "",
+    // Nome da "pasta" onde os dados ficam no banco. Se mudar aqui, mude também nas regras do Firebase.
+    basePath: "figoUfc"
+  };
+  // ======================================
+
+  var CATEGORIES = [
+    { id: "producao",   label: "Produção de ações e experiências",             pct: 35 },
+    { id: "midia",      label: "Mídia e distribuição",                         pct: 20 },
+    { id: "conteudo",   label: "Criação de conteúdo, identidade e materiais",  pct: 15 },
+    { id: "parcerias",  label: "Parcerias e ativações com terceiros",          pct: 10 },
+    { id: "mensuracao", label: "Mensuração e pesquisa",                        pct: 5 },
+    { id: "gestao",     label: "Gestão e operação",                            pct: 5 }
+  ];
+  var TOTAL_BUDGET = 70000;
+  var ALLOCABLE = TOTAL_BUDGET;
+
+  var PHASES = [
+    { id: "preparacao",  label: "Preparação" },
+    { id: "lancamento",  label: "Lançamento" },
+    { id: "sustentacao", label: "Sustentação" },
+    { id: "avaliacao",   label: "Avaliação" }
+  ];
+
+  var STATUSES = [
+    { id: "ideia",     label: "Ideia",        cls: "status-ideia" },
+    { id: "validacao", label: "Em validação", cls: "status-validacao" },
+    { id: "aprovada",  label: "Aprovada",     cls: "status-aprovada" }
+  ];
+
+  var VIEWS = [
+    { id: "geral",    label: "Visão geral",        title: "Visão geral",          sub: "Orçamento, tempo e gastos do portfólio de campanhas num só lugar.",
+      icon: '<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>' },
+    { id: "ideias",   label: "Ideias de campanha", title: "Ideias de campanha",   sub: "Cadastre as iniciativas conforme surgem, com custo e fase de implementação.",
+      icon: '<path d="M3 4h10M3 8h10M3 12h6"/>' },
+    { id: "publicos", label: "Públicos-alvo",      title: "Públicos-alvo",        sub: "Perfil de cada público: demografia, comportamento, psicografia e decisão.",
+      icon: '<circle cx="6" cy="5.5" r="2.5"/><path d="M1.5 13c.4-2.4 2.2-3.8 4.5-3.8s4.1 1.4 4.5 3.8"/><path d="M11 3.4a2.4 2.4 0 0 1 0 4.2M12.2 9.4c1.4.5 2.3 1.7 2.6 3.6"/>' },
+    { id: "analise",  label: "Análise de contexto", title: "Análise de contexto do UFC", sub: "SWOT e PESTEL do UFC, editáveis pelo grupo.",
+      icon: '<path d="M3 13V8M8 13V3M13 13V6"/>' }
+  ];
+
+  var PUBLIC_FIELD_GROUPS = [
+    { id: "demografico", label: "Dados demográficos", fields: [
+      ["faixaEtaria", "Faixa etária"], ["genero", "Gênero"], ["estadoCivil", "Estado civil"],
+      ["escolaridade", "Escolaridade"], ["rendaMensal", "Renda mensal"], ["ocupacao", "Ocupação/cargo"],
+      ["setorAtuacao", "Setor de atuação"], ["possuiFilhos", "Possui filhos?"], ["classeSocial", "Classe social"]
+    ]},
+    { id: "geografico", label: "Dados geográficos", fields: [
+      ["pais", "País"], ["estado", "Estado"], ["cidade", "Cidade"],
+      ["regiao", "Região (capital/interior)"], ["zona", "Zona (urbana/rural)"], ["alcanceAtuacao", "Alcance de atuação"]
+    ]},
+    { id: "profissional", label: "Dados profissionais (B2B ou B2C profissional)", fields: [
+      ["cargo", "Cargo"], ["nivelHierarquico", "Nível hierárquico"], ["areaResponsabilidade", "Área de responsabilidade"],
+      ["quemInfluencia", "Quem influencia suas decisões"], ["quemAprova", "Quem aprova compras"]
+    ]},
+    { id: "comportamental", label: "Perfil comportamental", fields: [
+      ["habitosCompra", "Hábitos de compra"], ["frequenciaCompra", "Frequência de compra"], ["canaisCompra", "Canais preferidos de compra"],
+      ["dispositivos", "Dispositivos utilizados"], ["redesSociais", "Redes sociais mais utilizadas"], ["consumoConteudo", "Consumo de conteúdo"],
+      ["horariosAtividade", "Horários de maior atividade"], ["fontesInformacao", "Fontes de informação"]
+    ]},
+    { id: "psicografico", label: "Perfil psicográfico", fields: [
+      ["valoresPrincipais", "Valores principais"], ["objetivos", "Objetivos"], ["sonhosAmbicoes", "Sonhos/ambições"],
+      ["medos", "Medos"], ["frustracoes", "Frustrações"], ["motivacoes", "Motivações"],
+      ["estiloVida", "Estilo de vida"], ["interesses", "Interesses"], ["personalidade", "Personalidade"]
+    ]},
+    { id: "decisao", label: "Processo de decisão", fields: [
+      ["principalNecessidade", "Principal necessidade"], ["problemaResolver", "Problema que deseja resolver"],
+      ["oQueConsidera", "O que considera na compra"], ["principaisObjecoes", "Principais objeções"],
+      ["fatoresConfianca", "Fatores de confiança"], ["tempoDecisao", "Tempo médio de decisão"]
+    ]},
+    { id: "branding", label: "Branding — Figo × UFC", fields: [
+      ["relacaoHoje", "Relação com a marca hoje"], ["relacaoDesejada", "Relação desejada"],
+      ["papel", "Papel da marca"], ["promessa", "Promessa em uma frase"]
+    ]}
+  ];
+  var PUBLIC_FIELD_KEYS = [];
+  PUBLIC_FIELD_GROUPS.forEach(function (g) { g.fields.forEach(function (f) { PUBLIC_FIELD_KEYS.push(f[0]); }); });
+
+  var SWOT_DEFS = [
+    { id: "forcas",        label: "Forças",        sub: "fatores internos positivos", tone: "pos" },
+    { id: "fraquezas",     label: "Fraquezas",     sub: "fatores internos negativos", tone: "neg" },
+    { id: "oportunidades", label: "Oportunidades", sub: "fatores externos positivos", tone: "pos" },
+    { id: "ameacas",       label: "Ameaças",       sub: "fatores externos negativos", tone: "neg" }
+  ];
+  var PESTEL_DEFS = [
+    { id: "politicos",    letter: "P", label: "Políticos",    tone: "neutral" },
+    { id: "economicos",   letter: "E", label: "Econômicos",   tone: "neutral" },
+    { id: "sociais",      letter: "S", label: "Sociais",      tone: "neutral" },
+    { id: "tecnologicos", letter: "T", label: "Tecnológicos", tone: "neutral" },
+    { id: "ambientais",   letter: "E", label: "Ambientais",   tone: "neutral" },
+    { id: "legais",       letter: "L", label: "Legais",       tone: "neutral" }
+  ];
+  var DEFAULT_SWOT = {
+    forcas: [
+      "Marca reconhecida e identidade visual marcante.",
+      "Forte conexão histórica com o Brasil e seus atletas.",
+      "Lutadores com personalidade, carisma e histórias de superação.",
+      "Forte potencial de entretenimento.",
+      "Engajamento nas redes sociais.",
+      "Experiência em ativações presenciais e interação com fãs.",
+      "Associação com competição, coragem, disciplina e superação."
+    ],
+    fraquezas: [
+      "Comunicação muito centrada em lutas, rivalidades e resultados.",
+      "Conteúdo que pressupõe conhecimento prévio sobre MMA.",
+      "Uso de linguagem técnica e jargões que dificultam a entrada de iniciantes.",
+      "Pouca conexão explícita com moda urbana, música, arte e games.",
+      "Dependência da popularidade dos atletas.",
+      "Barreira financeira para eventos e transmissões."
+    ],
+    oportunidades: [
+      "Aproximar o UFC de jovens de 18 a 35 anos ligados à cultura criativa e urbana.",
+      "Conectar a marca à música, ao streetwear, ao audiovisual e aos games.",
+      "Criar experiências interativas como ativações e simulações em academias, shoppings e espaços culturais.",
+      "Explorar mais conteúdos curtos para redes sociais.",
+      "Desenvolver conteúdos educativos, acessíveis e com histórias humanas.",
+      "Estimular conteúdo espontâneo e compartilhamento nas redes."
+    ],
+    ameacas: [
+      "Disputa pela atenção com música, streaming, games e criadores de conteúdo.",
+      "Percepção do MMA como excessivamente violento.",
+      "Serviços de streaming e custos acumulados para o consumidor.",
+      "Concorrência com futebol, esportes olímpicos e outros.",
+      "Distanciamento cultural entre a linguagem da marca e os interesses de novos públicos.",
+      "Rejeição de campanhas que pareçam artificiais ou desconectadas das comunidades culturais.",
+      "Controvérsias ou comportamentos de atletas que prejudiquem a imagem da marca."
+    ]
+  };
+  var DEFAULT_PESTEL = {
+    politicos: [
+      "Uso do esporte como ferramenta de inclusão e formação de jovens.",
+      "Escassez de incentivos fiscais e governamentais, operando exclusivamente via investimento privado, venda de direitos de transmissão e patrocínios comerciais globais.",
+      "Ministério do Esporte e Secretarias Estaduais: são os órgãos responsáveis por negociar a vinda do octógono para as capitais.",
+      "CABMMA (Comissão Atlética Brasileira de MMA): entidade privada e independente que foi estruturada historicamente por figuras com trânsito no poder público."
+    ],
+    economicos: [
+      "Impacto nos gastos com lazer.",
+      "Custos de logística e realização de eventos internacionais.",
+      "Oportunidades de venda de produtos licenciados.",
+      "Desvalorização cambial.",
+      "Custo de ingressos e assinaturas pode limitar o acesso.",
+      "Diferenças de renda influenciam o consumo de conteúdo e experiências.",
+      "Dependência de patrocinadores e parceiros comerciais.",
+      "Potencial de receita com produtos licenciados, moda e experiências."
+    ],
+    sociais: [
+      "Popularidade do MMA e identificação com atletas brasileiros (Anderson Silva, José Aldo, Charles do Bronx, Alex Poatan).",
+      "Crescimento das comunidades de fãs nas redes sociais.",
+      "Interesse do público jovem por esportes e entretenimento.",
+      "Diversidade de públicos e inclusão feminina no MMA.",
+      "Os ingressos para eventos em arenas nacionais costumam esgotar em horas.",
+      "O Brasil também se destaca como o segundo maior exportador de atletas ativos no plantel da franquia."
+    ],
+    tecnologicos: [
+      "Transmissões ao vivo por streaming com a Paramount+.",
+      "Uso de redes sociais para divulgar lutas e atletas.",
+      "Análise de dados de audiência e comportamento dos fãs.",
+      "Produção de conteúdos digitais e vídeos curtos.",
+      "Experiências imersivas com realidade virtual.",
+      "Uso de tecnologia no treinamento e na análise de desempenho."
+    ],
+    ambientais: [
+      "Geração de resíduos em eventos e arenas.",
+      "Consumo de energia nas instalações esportivas.",
+      "Emissões de carbono relacionadas a viagens e transportes, pois há alta demanda de energia para deslocamento de atletas e comitivas técnicas das capitais brasileiras para os centros em Las Vegas.",
+      "Uso de materiais descartáveis em ativações de marca.",
+      "Expectativa por eventos e ações promocionais sustentáveis.",
+      "Oportunidades para campanhas de conscientização ambiental."
+    ],
+    legais: [
+      "Lei Geral do Esporte (Lei nº 14.597/2023).",
+      "Normas de segurança para eventos esportivos.",
+      "Direitos de imagem dos lutadores.",
+      "Regras de publicidade e proteção do consumidor.",
+      "Normas antidopagem e integridade esportiva.",
+      "Regulamentação das apostas esportivas (bets).",
+      "Direitos trabalhistas: atletas competem sob contratos de prestadores de serviços independentes da matriz corporativa americana (TKO Group)."
+    ]
+  };
+  function cloneLists(src) {
+    var out = {};
+    Object.keys(src).forEach(function (k) { out[k] = src[k].slice(); });
+    return out;
+  }
+
+  function byId(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+  function fmtMoney(n) { n = Math.round(n || 0); return "US$ " + n.toLocaleString("pt-BR"); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function uid() { return "id" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  // ---------------- state ----------------
+  function defaultState() {
+    return { ideas: [], publics: [], swot: cloneLists(DEFAULT_SWOT), pestel: cloneLists(DEFAULT_PESTEL) };
+  }
+  function normalizeState(st) {
+    var out = defaultState();
+    if (!st || typeof st !== "object") return out;
+    if (Array.isArray(st.ideas)) out.ideas = st.ideas;
+    if (Array.isArray(st.publics)) out.publics = st.publics;
+    if (st.swot && typeof st.swot === "object") SWOT_DEFS.forEach(function (d) { if (Array.isArray(st.swot[d.id])) out.swot[d.id] = st.swot[d.id]; });
+    if (st.pestel && typeof st.pestel === "object") PESTEL_DEFS.forEach(function (d) { if (Array.isArray(st.pestel[d.id])) out.pestel[d.id] = st.pestel[d.id]; });
+    return out;
+  }
+
+  var REMOTE = !!(CONFIG.firebaseDatabaseUrl && CONFIG.firebaseDatabaseUrl.trim());
+  var DB = REMOTE ? CONFIG.firebaseDatabaseUrl.trim().replace(/\/+$/, "") + "/" + CONFIG.basePath : "";
+  var LS_KEY = "figo-ufc-state-v1";
+
+  var state = defaultState();
+  var ui = {
+    view: "geral", loading: REMOTE, loadError: false,
+    formOpen: false, editingId: null, confirmDeleteId: null,
+    filterPhase: "all", filterCategory: "all", draft: null,
+    publicFormOpen: false, editingPublicId: null, confirmDeletePublicId: null, publicDraft: null,
+    analiseTab: "swot", analiseEdit: false
+  };
+  var net = { status: REMOTE ? "loading" : "local" };   // local | loading | online | saving | offline
+  var remoteSnap = { ideas: {}, publics: {}, swot: {}, pestel: {} };
+  var pendingWrites = 0, writeFailed = false, needsRefetch = false, pendingRender = false;
+
+  function emptyDraft() {
+    return { name: "", category: CATEGORIES[0].id, publico: "", phase: PHASES[0].id, cost: "", status: "ideia", notes: "" };
+  }
+  function emptyPublicDraft() {
+    var d = { nome: "" };
+    PUBLIC_FIELD_KEYS.forEach(function (k) { d[k] = ""; });
+    return d;
+  }
+
+  // ---------------- sincronização ----------------
+  function syncNoteHtml() {
+    var cls = "", txt;
+    switch (net.status) {
+      case "local":   cls = "off";  txt = "Modo local — os dados ficam só neste navegador"; break;
+      case "loading": cls = "busy"; txt = "Conectando…"; break;
+      case "saving":  cls = "busy"; txt = "Salvando…"; break;
+      case "offline": cls = "off";  txt = "Sem conexão — tentando reconectar"; break;
+      default:        txt = "Ao vivo — mudanças aparecem para toda a equipe";
+    }
+    return '<span class="sync-dot ' + cls + '"></span>' + txt;
+  }
+  function setNet(status) {
+    net.status = status;
+    var el = document.querySelector(".sync-note");
+    if (el) el.innerHTML = syncNoteHtml();
+  }
+  function isTyping() {
+    var a = document.activeElement;
+    return !!(a && a.closest && a.closest("#app") && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+  }
+  // atualizações vindas de outras pessoas não derrubam quem está digitando
+  function safeRender() {
+    if (isTyping()) { pendingRender = true; return; }
+    render();
+  }
+  document.addEventListener("focusout", function () {
+    if (!pendingRender) return;
+    setTimeout(function () { if (!isTyping()) { pendingRender = false; render(); } }, 80);
+  });
+
+  function snapshotOf(st) {
+    var s = { ideas: {}, publics: {}, swot: {}, pestel: {} };
+    st.ideas.forEach(function (i) { s.ideas[i.id] = JSON.stringify(i); });
+    st.publics.forEach(function (p) { s.publics[p.id] = JSON.stringify(p); });
+    Object.keys(st.swot).forEach(function (g) { s.swot[g] = JSON.stringify(st.swot[g]); });
+    Object.keys(st.pestel).forEach(function (g) { s.pestel[g] = JSON.stringify(st.pestel[g]); });
+    return s;
+  }
+  function diffSnapshots(prev, cur) {
+    var ops = [];
+    ["ideas", "publics", "swot", "pestel"].forEach(function (sec) {
+      Object.keys(cur[sec]).forEach(function (k) {
+        if (prev[sec][k] !== cur[sec][k]) {
+          var listSec = (sec === "swot" || sec === "pestel");
+          ops.push({ method: "PUT", path: sec + "/" + k, body: listSec ? JSON.stringify(cur[sec][k]) : cur[sec][k] });
+        }
+      });
+      Object.keys(prev[sec]).forEach(function (k) { if (!(k in cur[sec])) ops.push({ method: "DELETE", path: sec + "/" + k }); });
+    });
+    return ops;
+  }
+  function listFrom(obj) {
+    return Object.keys(obj || {}).map(function (k) {
+      var it = obj[k];
+      if (it && typeof it === "object") { if (!it.id) it.id = k; return it; }
+      return null;
+    }).filter(Boolean).sort(function (a, b) { return (a.ord || 0) - (b.ord || 0); });
+  }
+  function groupsFrom(obj, defs, defaults) {
+    if (!obj || typeof obj !== "object") return { groups: cloneLists(defaults), seeded: true };
+    var out = {};
+    defs.forEach(function (d) {
+      var arr = [];
+      try { arr = JSON.parse(obj[d.id]); } catch (e) {}
+      out[d.id] = Array.isArray(arr) ? arr : [];
+    });
+    return { groups: out, seeded: false };
+  }
+  function applyRemote(data) {
+    data = data || {};
+    var sw = groupsFrom(data.swot, SWOT_DEFS, DEFAULT_SWOT);
+    var pe = groupsFrom(data.pestel, PESTEL_DEFS, DEFAULT_PESTEL);
+    state = { ideas: listFrom(data.ideas), publics: listFrom(data.publics), swot: sw.groups, pestel: pe.groups };
+    remoteSnap = snapshotOf(state);
+    if (sw.seeded) remoteSnap.swot = {};       // primeira vez: grava SWOT/PESTEL padrão no banco
+    if (pe.seeded) remoteSnap.pestel = {};
+    if (sw.seeded || pe.seeded) persist(); else safeRender();
+  }
+
+  function sendOp(op) {
+    pendingWrites++; setNet("saving");
+    var opts = { method: op.method, headers: { "Content-Type": "application/json" } };
+    if (op.body !== undefined) opts.body = op.body;
+    fetch(DB + "/" + op.path + ".json", opts)
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); })
+      .catch(function () { writeFailed = true; })
+      .then(function () {
+        pendingWrites--;
+        if (pendingWrites > 0) return;
+        if (writeFailed) { writeFailed = false; setNet("offline"); needsRefetch = true; refetch(); }
+        else { setNet("online"); if (needsRefetch) refetch(); }
+      });
+  }
+
+  function refetch() {
+    if (pendingWrites > 0) { needsRefetch = true; return; }
+    needsRefetch = false;
+    fetch(DB + ".json")
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (data) {
+        if (pendingWrites > 0) { needsRefetch = true; return; }
+        ui.loading = false; ui.loadError = false;
+        setNet("online");
+        applyRemote(data);
+      })
+      .catch(function () {
+        setNet("offline");
+        if (ui.loading) { ui.loading = false; ui.loadError = true; render(); }
+      });
+  }
+
+  function startStream() {
+    if (typeof EventSource === "undefined") return;
+    var es = new EventSource(DB + ".json");
+    var skipFirst = true, t = null;
+    function bump() { clearTimeout(t); t = setTimeout(refetch, 200); }
+    es.addEventListener("put", function () { if (skipFirst) { skipFirst = false; return; } bump(); });
+    es.addEventListener("patch", bump);
+    es.onopen = function () { if (net.status === "offline") refetch(); };
+    es.onerror = function () { if (net.status === "online") setNet("offline"); };
+  }
+
+  // grava as mudanças: no banco da equipe (só o que mudou) ou no navegador (modo local)
+  function persist() {
+    if (!REMOTE) {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+      render();
+      return;
+    }
+    var cur = snapshotOf(state);
+    var ops = diffSnapshots(remoteSnap, cur);
+    remoteSnap = cur;
+    render();
+    ops.forEach(sendOp);
+  }
+
+  // ---------------- mutations ----------------
+  function parseCost(v) { return parseFloat(String(v).replace(",", ".")) || 0; }
+  function addIdea(d) {
+    state.ideas.push({
+      id: uid(), ord: Date.now(), name: d.name.trim(), category: d.category, publico: (d.publico || "").trim(),
+      phase: d.phase, cost: parseCost(d.cost), status: d.status, notes: d.notes.trim()
+    });
+  }
+  function updateIdea(id, d) {
+    var it = byId(state.ideas, id);
+    if (!it) return;
+    it.name = d.name.trim(); it.category = d.category; it.publico = (d.publico || "").trim();
+    it.phase = d.phase; it.cost = parseCost(d.cost); it.status = d.status; it.notes = d.notes.trim();
+  }
+  function removeIdea(id) { state.ideas = state.ideas.filter(function (i) { return i.id !== id; }); }
+
+  function addPublic(d) {
+    var rec = { id: uid(), ord: Date.now(), nome: d.nome.trim() };
+    PUBLIC_FIELD_KEYS.forEach(function (k) { rec[k] = (d[k] || "").trim(); });
+    state.publics.push(rec);
+  }
+  function updatePublic(id, d) {
+    var it = byId(state.publics, id);
+    if (!it) return;
+    it.nome = d.nome.trim();
+    PUBLIC_FIELD_KEYS.forEach(function (k) { it[k] = (d[k] || "").trim(); });
+  }
+  function removePublic(id) { state.publics = state.publics.filter(function (p) { return p.id !== id; }); }
+
+  function addAnalysisItem(kind, gid, text) {
+    text = (text || "").trim();
+    if (!text) return false;
+    if (!Array.isArray(state[kind][gid])) state[kind][gid] = [];
+    state[kind][gid].push(text);
+    return true;
+  }
+  function removeAnalysisItem(kind, gid, idx) {
+    if (Array.isArray(state[kind][gid])) state[kind][gid].splice(idx, 1);
+  }
+
+  // ---------------- computed ----------------
+  function totalsByCategory() {
+    var m = {};
+    CATEGORIES.forEach(function (c) { m[c.id] = 0; });
+    state.ideas.forEach(function (i) { if (m.hasOwnProperty(i.category)) m[i.category] += (i.cost || 0); });
+    return m;
+  }
+  function totalsByPhase() {
+    var m = {};
+    PHASES.forEach(function (p) { m[p.id] = { cost: 0, count: 0 }; });
+    state.ideas.forEach(function (i) {
+      if (m.hasOwnProperty(i.phase)) { m[i.phase].cost += (i.cost || 0); m[i.phase].count += 1; }
+    });
+    return m;
+  }
+
+  // ================= render: shell =================
+  function render() {
+    var app = document.getElementById("app");
+    if (ui.loading) {
+      app.innerHTML = '<div class="splash"><div class="brand-mark">F</div><p>Carregando os dados da equipe…</p></div>';
+      return;
+    }
+    if (ui.loadError) {
+      app.innerHTML = '<div class="splash"><div class="brand-mark">F</div><p>Não foi possível conectar ao banco de dados da equipe.</p>'
+        + '<p class="hint">Confira a URL do Firebase em CONFIG (arquivo index.html) e as regras de acesso do banco.</p>'
+        + '<button class="new-idea-toggle" data-action="retry">Tentar de novo</button></div>';
+      var rb = app.querySelector("[data-action='retry']");
+      if (rb) rb.addEventListener("click", function () { ui.loadError = false; ui.loading = true; setNet("loading"); render(); refetch(); });
+      return;
+    }
+    var allocTotal = state.ideas.reduce(function (s, i) { return s + (i.cost || 0); }, 0);
+    var view = byId(VIEWS, ui.view) ? ui.view : "geral";
+    var meta = byId(VIEWS, view);
+    var body;
+    if (view === "ideias") body = viewIdeias();
+    else if (view === "publicos") body = viewPublicos();
+    else if (view === "analise") body = viewAnalise();
+    else body = viewGeral(allocTotal);
+
+    app.innerHTML = '<div class="shell">' + renderSide(allocTotal) + '<main class="main">' + renderTopbar(meta, view) + body + '</main></div>';
+    bindEvents();
+  }
+
+  function renderSide(allocTotal) {
+    var pct = Math.min(allocTotal / TOTAL_BUDGET * 100, 100);
+    var nav = VIEWS.map(function (v) {
+      var badge = v.id === "ideias" ? state.ideas.length : (v.id === "publicos" ? state.publics.length : null);
+      return '<button class="' + (ui.view === v.id ? "on" : "") + '" data-action="nav" data-view="' + v.id + '">'
+        + '<svg viewBox="0 0 16 16" aria-hidden="true">' + v.icon + '</svg><span>' + esc(v.label) + '</span>'
+        + (badge !== null ? '<span class="badge">' + badge + '</span>' : '') + '</button>';
+    }).join("");
+    return '<aside class="side">'
+      + '<div class="brand"><div class="brand-mark">F</div><div><div class="brand-name">Figo × UFC</div><div class="brand-sub">A3 Branding</div></div></div>'
+      + '<nav class="nav">' + nav + '</nav>'
+      + '<div class="side-foot">'
+      + '<div class="mini-label"><span>Orçamento alocado</span><b>' + Math.round(pct) + '%</b></div>'
+      + '<div class="mini-track"><div class="mini-fill" style="width:' + pct.toFixed(1) + '%"></div></div>'
+      + '<div class="mini-label" style="margin-top:7px;"><span>' + fmtMoney(allocTotal) + '</span><span>' + fmtMoney(TOTAL_BUDGET) + '</span></div>'
+      + '<div class="sync-note">' + syncNoteHtml() + '</div>'
+      + '<button class="btn-ghost" data-action="export" style="margin-top:12px;width:100%;font-size:12px;">Baixar backup (JSON)</button>'
+      + '</div></aside>';
+  }
+
+  function renderTopbar(meta, view) {
+    var actions = "";
+    if (view === "ideias" && !ui.formOpen) actions = '<button class="new-idea-toggle" data-action="open-form"><span class="plus">+</span> Nova ideia</button>';
+    if (view === "publicos" && !ui.publicFormOpen) actions = '<button class="new-idea-toggle" data-action="open-public-form"><span class="plus">+</span> Novo público-alvo</button>';
+    if (view === "analise") {
+      var kind = ui.analiseTab === "pestel" ? "pestel" : "swot";
+      actions = '<div class="seg" role="tablist">'
+        + '<button class="' + (kind === "swot" ? "on" : "") + '" data-action="an-tab" data-tab="swot">SWOT</button>'
+        + '<button class="' + (kind === "pestel" ? "on" : "") + '" data-action="an-tab" data-tab="pestel">PESTEL</button></div>'
+        + '<button class="btn-ghost" data-action="an-edit-toggle">' + (ui.analiseEdit ? "Concluir edição" : "Editar itens") + '</button>';
+    }
+    return '<header class="topbar"><div><p class="kicker">Figo × UFC · A3 Branding</p><h1>' + esc(meta.title) + '</h1><p class="sub">' + esc(meta.sub) + '</p></div>'
+      + '<div class="top-actions">' + actions + '</div></header>';
+  }
+
+  // ================= view: visão geral =================
+  function statCard(label, value, sub, cls, extra) {
+    return '<div class="card stat s4"><p class="score-label">' + esc(label) + '</p>'
+      + '<p class="score-value' + (cls ? " " + cls : "") + '">' + value + '</p>'
+      + (sub ? '<p class="score-sub">' + esc(sub) + '</p>' : '') + (extra || "") + '</div>';
+  }
+
+  function viewGeral(allocTotal) {
+    var alloc = totalsByCategory();
+    var byPhase = totalsByPhase();
+    var remaining = ALLOCABLE - allocTotal;
+    var pct = Math.min(allocTotal / TOTAL_BUDGET * 100, 100);
+    var maxPhaseCost = Math.max.apply(null, PHASES.map(function (p) { return byPhase[p.id].cost; }).concat([1]));
+
+    var html = '<div class="grid">';
+    html += statCard("Orçamento total", fmtMoney(TOTAL_BUDGET), "orçamento fictício da A3", "");
+    html += statCard("Alocado a ideias", fmtMoney(allocTotal), state.ideas.length ? Math.round(allocTotal / ALLOCABLE * 100) + "% do orçamento" : "nenhuma ideia ainda",
+      remaining < 0 ? "accent" : "", '<div class="mini-track"><div class="mini-fill" style="width:' + pct.toFixed(1) + '%"></div></div>');
+    html += statCard("Disponível", remaining < 0 ? fmtMoney(0) : fmtMoney(remaining), remaining < 0 ? "estourado em " + fmtMoney(Math.abs(remaining)) : "ainda sem destino", remaining < 0 ? "accent" : "good");
+
+    // orçamento por categoria
+    html += '<section class="card s7"><div class="card-head"><h2>Orçamento por categoria</h2><span class="hint">traço = meta da categoria</span></div>';
+    CATEGORIES.forEach(function (cat) {
+      var target = Math.round(TOTAL_BUDGET * cat.pct / 100);
+      var spent = alloc[cat.id];
+      var w = Math.min(spent / TOTAL_BUDGET * 100, 100);
+      var tp = Math.min(target / TOTAL_BUDGET * 100, 100);
+      var over = spent > target;
+      html += '<div class="bar-row"><div class="bar-top"><span class="bar-name">' + esc(cat.label) + '</span>'
+        + '<span class="bar-figs"><b>' + fmtMoney(spent) + '</b> / meta ' + fmtMoney(target) + '</span></div>'
+        + '<div class="bar-track"><div class="bar-fill' + (over ? "" : " under-target") + '" style="width:' + w.toFixed(1) + '%"></div>'
+        + '<div class="bar-target" style="left:' + tp.toFixed(1) + '%"></div></div></div>';
+    });
+    html += '<div class="legend"><span><i style="background:var(--accent)"></i>acima ou na meta</span><span><i style="background:var(--faint)"></i>abaixo da meta</span></div></section>';
+
+    // tempo por fase
+    html += '<section class="card s5"><div class="card-head"><h2>Tempo — carga por fase</h2><span class="hint">custo por fase da implementação</span></div>';
+    PHASES.forEach(function (ph) {
+      var d = byPhase[ph.id];
+      var w = d.cost > 0 ? Math.max(d.cost / maxPhaseCost * 100, 4) : 0;
+      html += '<div class="bar-row"><div class="bar-top"><span class="bar-name">' + esc(ph.label) + '</span>'
+        + '<span class="bar-figs"><b>' + fmtMoney(d.cost) + '</b> · ' + d.count + (d.count === 1 ? " ideia" : " ideias") + '</span></div>'
+        + '<div class="bar-track"><div class="bar-fill" style="width:' + w.toFixed(1) + '%"></div></div></div>';
+    });
+    html += '</section>';
+
+    // comparativo
+    html += renderCompareCard(allocTotal);
+    html += '</div>';
+    html += '<p class="footnote">Meta de cada categoria calculada sobre o orçamento total de US$ ' + TOTAL_BUDGET.toLocaleString("pt-BR") + ' fictícios da A3.</p>';
+    return html;
+  }
+
+  function renderCompareCard(allocTotal) {
+    var rows = state.ideas.slice().sort(function (a, b) { return (b.cost || 0) - (a.cost || 0); });
+    var html = '<section class="card s12"><div class="card-head"><h2>Comparativo de gastos por campanha</h2><span class="hint">do maior para o menor custo</span></div>';
+    if (!rows.length) {
+      return html + '<div class="empty table-empty">Cadastre ideias para ver o comparativo de gastos aqui.</div></section>';
+    }
+    html += '<div class="table-scroll"><table class="compare"><thead><tr>'
+      + '<th>Campanha</th><th>Categoria</th><th>Fase</th><th>Público</th><th class="num">Custo</th><th class="num">% do orçamento</th>'
+      + '</tr></thead><tbody>';
+    rows.forEach(function (it) {
+      var cat = byId(CATEGORIES, it.category), ph = byId(PHASES, it.phase);
+      var pct = TOTAL_BUDGET > 0 ? (it.cost || 0) / TOTAL_BUDGET * 100 : 0;
+      html += '<tr><td class="name">' + esc(it.name || "Sem nome") + '</td><td>' + esc(cat ? cat.label : "—") + '</td>'
+        + '<td>' + esc(ph ? ph.label : "—") + '</td><td>' + esc(it.publico || "—") + '</td>'
+        + '<td class="num">' + fmtMoney(it.cost) + '</td><td class="num">' + pct.toFixed(1) + '%</td></tr>';
+    });
+    var totalPct = TOTAL_BUDGET > 0 ? allocTotal / TOTAL_BUDGET * 100 : 0;
+    html += '<tr class="total"><td>Total</td><td></td><td></td><td></td><td class="num">' + fmtMoney(allocTotal) + '</td><td class="num">' + totalPct.toFixed(1) + '%</td></tr>';
+    return html + '</tbody></table></div></section>';
+  }
+
+  // ================= view: ideias =================
+  function viewIdeias() {
+    var html = '<div class="grid">';
+    if (ui.formOpen) html += '<div class="s12">' + renderIdeaForm() + '</div>';
+
+    var phaseOptions = '<option value="all">Todas as fases</option>' + PHASES.map(function (p) {
+      return '<option value="' + p.id + '"' + (ui.filterPhase === p.id ? " selected" : "") + '>' + esc(p.label) + '</option>';
+    }).join("");
+    var catOptions = '<option value="all">Todas as categorias</option>' + CATEGORIES.map(function (c) {
+      return '<option value="' + c.id + '"' + (ui.filterCategory === c.id ? " selected" : "") + '>' + esc(c.label) + '</option>';
+    }).join("");
+
+    var filtered = state.ideas.filter(function (i) {
+      if (ui.filterPhase !== "all" && i.phase !== ui.filterPhase) return false;
+      if (ui.filterCategory !== "all" && i.category !== ui.filterCategory) return false;
+      return true;
+    });
+
+    html += '<section class="card s12"><div class="card-head"><h2>Ideias cadastradas <span class="hint">· ' + state.ideas.length + (state.ideas.length === 1 ? " ideia" : " ideias") + '</span></h2>'
+      + '<div class="filters"><select class="filter" data-role="filter-phase">' + phaseOptions + '</select>'
+      + '<select class="filter" data-role="filter-category">' + catOptions + '</select></div></div>';
+    if (!filtered.length) {
+      html += '<div class="empty">' + (state.ideas.length ? "Nenhuma ideia bate com esse filtro." : "Nenhuma ideia cadastrada ainda. Comece pela primeira.") + '</div>';
+    } else {
+      html += '<div class="cards-grid">' + filtered.map(renderIdeaCard).join("") + '</div>';
+    }
+    return html + '</section></div>';
+  }
+
+  function renderIdeaCard(it) {
+    var cat = byId(CATEGORIES, it.category), ph = byId(PHASES, it.phase);
+    var st = byId(STATUSES, it.status) || STATUSES[0];
+    var confirming = ui.confirmDeleteId === it.id;
+    return '<article class="idea-card">'
+      + '<div class="ic-top"><span class="tag ' + st.cls + '">' + esc(st.label) + '</span><span class="ic-cost">' + fmtMoney(it.cost) + '</span></div>'
+      + '<div class="ic-name">' + esc(it.name || "Sem nome") + '</div>'
+      + '<div class="ic-meta">' + esc(cat ? cat.label : "—") + '<span class="dot">·</span>' + esc(ph ? ph.label : "—")
+      + (it.publico ? '<span class="dot">·</span>' + esc(it.publico) : '') + '</div>'
+      + (it.notes ? '<div class="ic-notes">' + esc(it.notes) + '</div>' : '')
+      + '<div class="ic-actions"><button class="icon-btn" data-action="edit" data-id="' + it.id + '">Editar</button>'
+      + (confirming
+          ? '<button class="icon-btn confirm" data-action="confirm-delete" data-id="' + it.id + '">Confirmar exclusão</button><button class="icon-btn" data-action="cancel-delete">Cancelar</button>'
+          : '<button class="icon-btn danger" data-action="delete" data-id="' + it.id + '">Excluir</button>')
+      + '</div></article>';
+  }
+
+  function renderIdeaForm() {
+    var d = ui.draft || emptyDraft();
+    var isEdit = !!ui.editingId;
+    var catOpts = CATEGORIES.map(function (c) { return '<option value="' + c.id + '"' + (d.category === c.id ? " selected" : "") + '>' + esc(c.label) + '</option>'; }).join("");
+    var phOpts = PHASES.map(function (p) { return '<option value="' + p.id + '"' + (d.phase === p.id ? " selected" : "") + '>' + esc(p.label) + '</option>'; }).join("");
+    var stOpts = STATUSES.map(function (s) { return '<option value="' + s.id + '"' + (d.status === s.id ? " selected" : "") + '>' + esc(s.label) + '</option>'; }).join("");
+    var publicField = state.publics.length
+      ? '<select class="f" data-field="publico"><option value="">Selecione…</option>' + state.publics.map(function (p) {
+          return '<option value="' + esc(p.nome) + '"' + (d.publico === p.nome ? " selected" : "") + '>' + esc(p.nome) + '</option>';
+        }).join("") + '</select>'
+      : '<input class="f" data-field="publico" value="' + esc(d.publico) + '" placeholder="Cadastre um público-alvo primeiro, ou digite aqui">';
+
+    return '<div class="card idea-form"><h3>' + (isEdit ? "Editar ideia" : "Nova ideia") + '</h3>'
+      + '<div class="field-grid cols3">'
+      + '<label class="field full"><span class="lbl">Nome da ideia</span><input class="f" data-field="name" value="' + esc(d.name) + '" placeholder="Ex.: série de conteúdo com atletas de base"></label>'
+      + '<label class="field"><span class="lbl">Categoria de orçamento</span><select class="f" data-field="category">' + catOpts + '</select></label>'
+      + '<label class="field"><span class="lbl">Fase de implementação</span><select class="f" data-field="phase">' + phOpts + '</select></label>'
+      + '<label class="field"><span class="lbl">Status</span><select class="f" data-field="status">' + stOpts + '</select></label>'
+      + '<label class="field"><span class="lbl">Público</span>' + publicField + '</label>'
+      + '<label class="field"><span class="lbl">Custo estimado (US$)</span><input class="f" data-field="cost" inputmode="decimal" value="' + esc(d.cost) + '" placeholder="0"></label>'
+      + '<label class="field full"><span class="lbl">Notas</span><textarea class="f" data-field="notes" placeholder="Contexto, dependências, referência...">' + esc(d.notes) + '</textarea></label>'
+      + '</div><div class="form-actions"><button class="btn-primary" data-action="save-form">' + (isEdit ? "Salvar alterações" : "Adicionar ideia") + '</button>'
+      + '<button class="btn-ghost" data-action="close-form">Cancelar</button></div></div>';
+  }
+
+  // ================= view: públicos =================
+  function viewPublicos() {
+    var html = '<div class="grid">';
+    if (ui.publicFormOpen) html += '<div class="s12">' + renderPublicForm() + '</div>';
+    if (!state.publics.length) {
+      if (!ui.publicFormOpen) html += '<div class="s12"><div class="empty">Nenhum público-alvo cadastrado ainda. Use o botão acima para registrar o primeiro.</div></div>';
+    } else {
+      state.publics.forEach(function (p) { html += '<section class="card s12">' + renderPublicCard(p) + '</section>'; });
+    }
+    return html + '</div>';
+  }
+
+  function renderPublicForm() {
+    var d = ui.publicDraft || emptyPublicDraft();
+    var isEdit = !!ui.editingPublicId;
+    var groups = PUBLIC_FIELD_GROUPS.map(function (g) {
+      var fields = g.fields.map(function (f) {
+        return '<label class="field"><span class="lbl">' + esc(f[1]) + '</span><input class="f" data-pfield="' + f[0] + '" value="' + esc(d[f[0]] || "") + '"></label>';
+      }).join("");
+      return '<div class="gblock"><div class="gtitle">' + esc(g.label) + '</div><div class="gfields">' + fields + '</div></div>';
+    }).join("");
+    return '<div class="card idea-form"><h3>' + (isEdit ? "Editar público-alvo" : "Novo público-alvo") + '</h3>'
+      + '<div class="field-grid"><label class="field full"><span class="lbl">Nome do público</span><input class="f" data-pfield="nome" value="' + esc(d.nome) + '" placeholder="Ex.: fãs recentes do UFC no Brasil"></label></div>'
+      + '<div class="form-groups">' + groups + '</div>'
+      + '<div class="form-actions"><button class="btn-primary" data-action="save-public-form">' + (isEdit ? "Salvar alterações" : "Adicionar público") + '</button>'
+      + '<button class="btn-ghost" data-action="close-public-form">Cancelar</button></div></div>';
+  }
+
+  function renderPublicCard(p) {
+    var confirming = ui.confirmDeletePublicId === p.id;
+    var anyFilled = PUBLIC_FIELD_KEYS.some(function (k) { return p[k]; });
+    var blocks = PUBLIC_FIELD_GROUPS.map(function (g) {
+      var rows = g.fields.filter(function (f) { return p[f[0]]; });
+      if (!rows.length) return "";
+      return '<div class="gblock"><div class="gtitle">' + esc(g.label) + '</div><div class="group-rows">'
+        + rows.map(function (f) { return '<div><b>' + esc(f[1]) + ':</b> ' + esc(p[f[0]]) + '</div>'; }).join("") + '</div></div>';
+    }).join("");
+    return '<div class="public-head"><span class="public-name">' + esc(p.nome || "Sem nome") + '</span><div class="head-actions">'
+      + '<button class="icon-btn" data-action="edit-public" data-id="' + p.id + '">Editar</button>'
+      + (confirming
+          ? '<button class="icon-btn confirm" data-action="confirm-delete-public" data-id="' + p.id + '">Confirmar exclusão</button><button class="icon-btn" data-action="cancel-delete-public">Cancelar</button>'
+          : '<button class="icon-btn danger" data-action="delete-public" data-id="' + p.id + '">Excluir</button>')
+      + '</div></div>'
+      + (anyFilled ? '<div class="group-blocks">' + blocks + '</div>' : '<p class="public-notes">Nenhum critério preenchido ainda — clique em editar para completar.</p>');
+  }
+
+  // ================= view: análise =================
+  function analysisCard(kind, def) {
+    var items = state[kind][def.id] || [];
+    var h = '<div class="an-card tone-' + def.tone + '"><div class="an-card-head">'
+      + (def.letter ? '<span class="an-letter">' + def.letter + '</span>' : '')
+      + '<div><div class="an-title">' + esc(def.label) + '</div>' + (def.sub ? '<div class="an-sub">' + esc(def.sub) + '</div>' : '') + '</div>'
+      + '<span class="an-count">' + items.length + '</span></div>';
+    h += '<ul class="an-list">' + items.map(function (t, i) {
+      return '<li><span>' + esc(t) + '</span>'
+        + (ui.analiseEdit ? '<button class="an-x" title="Remover" aria-label="Remover item" data-action="an-remove" data-kind="' + kind + '" data-group="' + def.id + '" data-idx="' + i + '">×</button>' : '')
+        + '</li>';
+    }).join("") + '</ul>';
+    if (ui.analiseEdit) {
+      h += '<div class="an-add"><input class="f" data-an-input="' + kind + ':' + def.id + '" placeholder="Novo item…">'
+        + '<button class="btn-ghost" data-action="an-add" data-kind="' + kind + '" data-group="' + def.id + '">Adicionar</button></div>';
+    }
+    return h + '</div>';
+  }
+
+  function viewAnalise() {
+    var kind = ui.analiseTab === "pestel" ? "pestel" : "swot";
+    var html = '<div class="grid">';
+    if (kind === "swot") {
+      html += '<div class="an-axis">Fatores internos</div>'
+        + '<div class="s6">' + analysisCard("swot", SWOT_DEFS[0]) + '</div><div class="s6">' + analysisCard("swot", SWOT_DEFS[1]) + '</div>'
+        + '<div class="an-axis">Fatores externos</div>'
+        + '<div class="s6">' + analysisCard("swot", SWOT_DEFS[2]) + '</div><div class="s6">' + analysisCard("swot", SWOT_DEFS[3]) + '</div>';
+    } else {
+      html += PESTEL_DEFS.map(function (d) { return '<div class="s4w">' + analysisCard("pestel", d) + '</div>'; }).join("");
+    }
+    return html + '</div>';
+  }
+
+  // ================= events =================
+  function bindEvents() {
+    var app = document.getElementById("app");
+    function on(sel, fn) { app.querySelectorAll(sel).forEach(function (el) { el.addEventListener("click", function (ev) { fn(el, ev); }); }); }
+
+    on("[data-action='nav']", function (el) {
+      ui.view = el.getAttribute("data-view");
+      ui.confirmDeleteId = null; ui.confirmDeletePublicId = null;
+      render();
+      window.scrollTo(0, 0);
+    });
+
+    on("[data-action='export']", function () {
+      var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "figo-ufc-backup.json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    });
+
+    // ideias
+    on("[data-action='open-form']", function () { ui.formOpen = true; ui.editingId = null; ui.draft = emptyDraft(); render(); });
+    on("[data-action='close-form']", function () { ui.formOpen = false; ui.editingId = null; ui.draft = null; render(); });
+    on("[data-action='edit']", function (el) {
+      var it = byId(state.ideas, el.getAttribute("data-id"));
+      if (!it) return;
+      ui.editingId = it.id;
+      ui.draft = { name: it.name, category: it.category, publico: it.publico, phase: it.phase, cost: String(it.cost || ""), status: it.status, notes: it.notes };
+      ui.formOpen = true; render();
+      var form = app.querySelector(".idea-form");
+      if (form) form.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    on("[data-action='delete']", function (el) { ui.confirmDeleteId = el.getAttribute("data-id"); render(); });
+    on("[data-action='cancel-delete']", function () { ui.confirmDeleteId = null; render(); });
+    on("[data-action='confirm-delete']", function (el) { removeIdea(el.getAttribute("data-id")); ui.confirmDeleteId = null; persist(); });
+    app.querySelectorAll("[data-field]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        if (!ui.draft) ui.draft = emptyDraft();
+        ui.draft[el.getAttribute("data-field")] = el.value;
+      });
+    });
+    on("[data-action='save-form']", function () {
+      var d = ui.draft || emptyDraft();
+      if (!d.name || !d.name.trim()) {
+        var ni = app.querySelector("[data-field='name']");
+        if (ni) { ni.style.borderColor = "var(--accent)"; ni.focus(); }
+        return;
+      }
+      if (ui.editingId) updateIdea(ui.editingId, d); else addIdea(d);
+      ui.formOpen = false; ui.editingId = null; ui.draft = null;
+      persist();
+    });
+    var fp = app.querySelector("[data-role='filter-phase']");
+    if (fp) fp.addEventListener("change", function () { ui.filterPhase = fp.value; render(); });
+    var fc = app.querySelector("[data-role='filter-category']");
+    if (fc) fc.addEventListener("change", function () { ui.filterCategory = fc.value; render(); });
+
+    // públicos-alvo
+    on("[data-action='open-public-form']", function () { ui.publicFormOpen = true; ui.editingPublicId = null; ui.publicDraft = emptyPublicDraft(); render(); });
+    on("[data-action='close-public-form']", function () { ui.publicFormOpen = false; ui.editingPublicId = null; ui.publicDraft = null; render(); });
+    on("[data-action='edit-public']", function (el) {
+      var it = byId(state.publics, el.getAttribute("data-id"));
+      if (!it) return;
+      ui.editingPublicId = it.id;
+      var d = { nome: it.nome };
+      PUBLIC_FIELD_KEYS.forEach(function (k) { d[k] = it[k] || ""; });
+      ui.publicDraft = d; ui.publicFormOpen = true; render();
+      var form = app.querySelector(".idea-form");
+      if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    on("[data-action='delete-public']", function (el) { ui.confirmDeletePublicId = el.getAttribute("data-id"); render(); });
+    on("[data-action='cancel-delete-public']", function () { ui.confirmDeletePublicId = null; render(); });
+    on("[data-action='confirm-delete-public']", function (el) { removePublic(el.getAttribute("data-id")); ui.confirmDeletePublicId = null; persist(); });
+    app.querySelectorAll("[data-pfield]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        if (!ui.publicDraft) ui.publicDraft = emptyPublicDraft();
+        ui.publicDraft[el.getAttribute("data-pfield")] = el.value;
+      });
+    });
+    on("[data-action='save-public-form']", function () {
+      var d = ui.publicDraft || emptyPublicDraft();
+      if (!d.nome || !d.nome.trim()) {
+        var ni = app.querySelector("[data-pfield='nome']");
+        if (ni) { ni.style.borderColor = "var(--accent)"; ni.focus(); }
+        return;
+      }
+      if (ui.editingPublicId) updatePublic(ui.editingPublicId, d); else addPublic(d);
+      ui.publicFormOpen = false; ui.editingPublicId = null; ui.publicDraft = null;
+      persist();
+    });
+
+    // análise
+    on("[data-action='an-tab']", function (el) { ui.analiseTab = el.getAttribute("data-tab"); render(); });
+    on("[data-action='an-edit-toggle']", function () { ui.analiseEdit = !ui.analiseEdit; render(); });
+    on("[data-action='an-remove']", function (el) {
+      removeAnalysisItem(el.getAttribute("data-kind"), el.getAttribute("data-group"), parseInt(el.getAttribute("data-idx"), 10));
+      persist();
+    });
+    function submitAnalysisAdd(kind, gid) {
+      var input = app.querySelector("[data-an-input='" + kind + ":" + gid + "']");
+      if (input && addAnalysisItem(kind, gid, input.value)) persist();
+    }
+    on("[data-action='an-add']", function (el) { submitAnalysisAdd(el.getAttribute("data-kind"), el.getAttribute("data-group")); });
+    app.querySelectorAll("[data-an-input]").forEach(function (el) {
+      el.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") { var parts = el.getAttribute("data-an-input").split(":"); submitAnalysisAdd(parts[0], parts[1]); }
+      });
+    });
+  }
+
+  // ---------------- boot ----------------
+  if (REMOTE) {
+    render();                 // tela de carregamento
+    refetch();                // primeira leitura
+    startStream();            // avisos em tempo real (Server-Sent Events)
+    setInterval(function () { if (!document.hidden && pendingWrites === 0) refetch(); }, 30000);   // rede de segurança
+  } else {
+    try {
+      var saved = localStorage.getItem(LS_KEY);
+      if (saved) state = normalizeState(JSON.parse(saved));
+    } catch (e) {}
+    render();
+    window.addEventListener("storage", function (e) {          // outras abas do mesmo navegador
+      if (e.key !== LS_KEY) return;
+      try { state = normalizeState(JSON.parse(e.newValue)); } catch (err) {}
+      safeRender();
+    });
+  }
+})();
+</script>
+</body>
+</html>
